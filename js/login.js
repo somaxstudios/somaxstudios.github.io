@@ -32,8 +32,8 @@ function obterLocalizacao() {
       reject(new Error("A geolocalização não é suportada pelo seu navegador."));
     } else {
       navigator.geolocation.getCurrentPosition(resolve, reject, {
-        enableHighAccuracy: true,
-        timeout: 10000,
+        enableHighAccuracy: false, // <-- Mude para false para testar no PC
+        timeout: 15000,            // <-- Aumente para 15 segundos
         maximumAge: 0
       });
     }
@@ -185,20 +185,36 @@ loginForm.addEventListener('submit', async (e) => {
       const latUsuario = position.coords.latitude;
       const lonUsuario = position.coords.longitude;
 
-      // Coordenadas aproximadas do Plus Code W4F3+RC (São José, Recife - PE)
+// Coordenadas aproximadas do Plus Code W4F3+RC (São José, Recife - PE)
       const latAlvo = -8.0691;
       const lonAlvo = -34.8783;
 
       const distancia = calcularDistancia(latUsuario, lonUsuario, latAlvo, lonAlvo);
 
-      // Limite de 0.5km (500 metros). Pode ajustar este valor se necessário.
-      if (distancia > 0.5) {
-        showMessage('Acesso negado: Precisa de estar fisicamente no escritório em São José para criar uma conta.');
+      // Pode apagar ou manter estes console.log, são úteis se a internet mudar de IP
+      console.log(`Sua Latitude: ${latUsuario}, Sua Longitude: ${lonUsuario}`);
+      console.log(`Distância calculada da sede: ${distancia.toFixed(2)} km`);
+
+      // Limite ajustado para 3.0 km para acomodar o IP da rede da gravadora
+      if (distancia > 3.0) {
+        showMessage(`Acesso negado: O sistema detetou que está a ${distancia.toFixed(1)} km da sede. O registo só é permitido na rede da empresa.`);
         setLoading(false);
         return;
       }
-    } catch (err) {
-      showMessage('Para criar uma conta, é obrigatório permitir o acesso à sua localização no navegador.');
+} catch (err) {
+      // MODO DEBUG: Vai mostrar o erro exato no console (F12)
+      console.warn("Erro detalhado de Geolocalização:", err);
+      
+      if (err.code === 1) {
+        showMessage('Acesso negado: Você bloqueou a permissão de localização no navegador.');
+      } else if (err.code === 2) {
+        showMessage('Erro técnico: O navegador não conseguiu determinar sua posição atual (Position Unavailable). Verifique se o Windows/Mac está com a localização ativada.');
+      } else if (err.code === 3) {
+        showMessage('Erro técnico: Tempo esgotado ao tentar obter a localização (Timeout).');
+      } else {
+        showMessage('Erro desconhecido ao tentar acessar a localização.');
+      }
+      
       setLoading(false);
       return;
     }
