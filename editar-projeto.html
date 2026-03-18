@@ -444,6 +444,49 @@
             }
         }
 
+        // ==================== FUNÇÕES PARA CÁLCULO DO STATUS DO PROJETO ====================
+        function calcularStatusAudioProjeto(faixas) {
+            const statuses = [...faixas].map(faixa =>
+                faixa.querySelector('select[name^="faixa_audio_status"]')?.value || 'AINDA_NAO_TEM'
+            );
+
+            if (statuses.length > 0 && statuses.every(s => s === 'CONCLUIDO')) {
+                return 'CONCLUIDO';
+            }
+
+            if (statuses.some(s => s === 'EM_ANDAMENTO' || s === 'CONCLUIDO')) {
+                return 'EM_ANDAMENTO';
+            }
+
+            return 'AINDA_NAO_TEM';
+        }
+
+        function calcularDatasAudioProjeto(faixas) {
+            const inicios = [];
+            const conclusoes = [];
+
+            [...faixas].forEach(faixa => {
+                const status = faixa.querySelector('select[name^="faixa_audio_status"]')?.value;
+                const inicio = faixa.querySelector('input[name^="faixa_audio_inicio"]')?.value;
+                const conclusao = faixa.querySelector('input[name^="faixa_audio_conclusao"]')?.value;
+
+                if ((status === 'EM_ANDAMENTO' || status === 'CONCLUIDO') && inicio) {
+                    inicios.push(inicio);
+                }
+
+                if (status === 'CONCLUIDO' && conclusao) {
+                    conclusoes.push(conclusao);
+                }
+            });
+
+            return {
+                audio_data_inicio: inicios.length ? inicios.sort()[0] : null,
+                audio_data_conclusao: conclusoes.length === faixas.length && conclusoes.length > 0
+                    ? conclusoes.sort().slice(-1)[0]
+                    : null
+            };
+        }
+
         // ==================== MANIPULAÇÃO DE LINHAS (COM DEFAULT PARA REUSO) ====================
         function adicionarLinhaParticipante(container, tipo, faixaIndex, pessoa = {}) {
             const div = document.createElement('div');
@@ -688,6 +731,11 @@
             try {
                 validarStatusComDatas();
 
+                // Coletar as faixas e calcular o status do projeto
+                const faixas = document.querySelectorAll('.faixa-item');
+                const audio_status = calcularStatusAudioProjeto(faixas);
+                const { audio_data_inicio, audio_data_conclusao } = calcularDatasAudioProjeto(faixas);
+
                 const projetoUpdate = {
                     nome_projeto: document.getElementById('nome_projeto').value,
                     titulo: document.getElementById('titulo_principal').value || null,
@@ -707,6 +755,10 @@
                     capa_status: document.getElementById('capa_status').value,
                     capa_data_inicio: document.getElementById('capa_data_inicio').value || null,
                     capa_data_conclusao: document.getElementById('capa_data_conclusao').value || null,
+                    // NOVOS CAMPOS calculados a partir das faixas
+                    audio_status,
+                    audio_data_inicio,
+                    audio_data_conclusao
                 };
 
                 const { error: erroUpdate } = await supabase
@@ -719,7 +771,6 @@
                 await supabase.from('projeto_participantes').delete().eq('projeto_id', projetoId);
                 await supabase.from('faixas').delete().eq('projeto_id', projetoId);
 
-                const faixas = document.querySelectorAll('.faixa-item');
                 for (let i = 0; i < faixas.length; i++) {
                     const faixa = faixas[i];
                     const titulo = faixa.querySelector('input[name^="faixa_titulo"]').value;
