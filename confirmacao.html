@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Email confirmado</title>
+  <script>
+    // pega token da URL (Supabase manda no hash)
+    const hash = window.location.hash;
+    console.log("Hash:", hash);
+
+    // aqui você pode validar sessão se quiser
+
+    // redireciona após 2 segundos
+    setTimeout(() => {
+      window.location.href = "https://somaxstudios.github.io/";
+    }, 2000);
+  </script>
+
+  <style>
+    body {
+      background: #0f172a;
+      color: white;
+      font-family: Arial;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <h1>✅ Email confirmado com sucesso!</h1>
+    <p>Redirecionando para o sistema...</p>
+  </div>
+</body>
+</html>
