@@ -67,7 +67,7 @@
                 <h1 class="text-3xl font-bold text-white tracking-tight uppercase">
                     Catálogo <span class="text-labelAccent">Label</span>
                 </h1>
-                <p class="text-sm text-zinc-500 mt-1">Gestão de Acervo e Lançamentos</p>
+                <p class="text-sm text-zinc-500 mt-1">Gestão de Acervo Musical</p>
             </div>
             <div class="flex gap-2">
                 <button id="btnExportCSV" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow-md">
@@ -89,7 +89,7 @@
             </button>
         </div>
 
-        <!-- Container do Catálogo (conteúdo principal) -->
+        <!-- Container do Catálogo -->
         <div id="catalogoContainer">
             <!-- Barra de pesquisa e filtros -->
             <div class="bg-labelCard p-4 rounded-xl border border-zinc-800 mb-8 shadow-lg">
@@ -158,6 +158,11 @@
                         <option value="false">Ativo (Não foi retirado)</option>
                         <option value="true">Taken Down (Retirado das plataformas)</option>
                     </select>
+                    <select id="addPodeLancar" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none lg:col-span-2">
+                        <option value="" selected>Pode Lançar? (Selecione)</option>
+                        <option value="true">Sim</option>
+                        <option value="false">Não</option>
+                    </select>
                 </div>
                 <div class="flex flex-col sm:flex-row gap-3 justify-end">
                     <button id="btnCancelar" class="px-6 py-3 rounded-lg font-semibold text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors">Cancelar</button>
@@ -177,8 +182,9 @@
                             <th class="p-4 font-medium border-b border-zinc-800">Formato</th>
                             <th class="p-4 font-medium border-b border-zinc-800">Nº do Tape</th>
                             <th class="p-4 font-medium border-b border-zinc-800">Stream Status</th>
-                            <th class="p-4 font-medium border-b border-zinc-800 text-center">Taken Down</th>
-                        </tr>
+                            <th class="p-4 font-medium border-b border-zinc-800">Taken Down</th>
+                            <th class="p-4 font-medium border-b border-zinc-800">Pode Lançar</th>
+                         </tr>
                     </thead>
                     <tbody id="tableBody" class="block md:table-row-group text-sm">
                     </tbody>
@@ -198,11 +204,11 @@
             </div>
         </div>
 
-        <!-- Container do Dashboard (inicialmente escondido) -->
+        <!-- Container do Dashboard -->
         <div id="dashboardContainer" class="hidden">
             <div class="bg-labelCard p-6 rounded-xl border border-zinc-800 shadow-lg">
                 <h2 class="text-2xl font-bold text-white mb-6">Dashboard de Estatísticas</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" id="statsCards">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8" id="statsCards">
                     <div class="bg-zinc-900 rounded-lg p-4 text-center">
                         <p class="text-zinc-400 text-sm">Total de Itens</p>
                         <p id="totalItems" class="text-3xl font-bold text-labelAccent">-</p>
@@ -218,6 +224,10 @@
                     <div class="bg-zinc-900 rounded-lg p-4 text-center">
                         <p class="text-zinc-400 text-sm">Taken Down</p>
                         <p id="takenDownCount" class="text-3xl font-bold text-red-400">-</p>
+                    </div>
+                    <div class="bg-zinc-900 rounded-lg p-4 text-center">
+                        <p class="text-zinc-400 text-sm">Pode Lançar</p>
+                        <p id="podeLancarCount" class="text-3xl font-bold text-purple-400">-</p>
                     </div>
                 </div>
 
