@@ -29,7 +29,7 @@ let currentFormato = '';
 let currentPrateleira = '';
 let currentStream = '';
 
-// --- GERAÇÃO DAS OPÇÕES DE PRATELEIRA (com opção em branco) ---
+// --- GERAÇÃO DAS OPÇÕES DE PRATELEIRA ---
 function gerarOpcoesPrateleiras() {
     const selectFilter = filterPrateleira;
     const selectAdd = document.getElementById('addPrateleira');
@@ -87,6 +87,13 @@ async function carregarDashboard() {
         .select('*', { count: 'exact', head: true })
         .eq('taken_down', true);
     if (!tdError) document.getElementById('takenDownCount').innerText = takenDown || 0;
+
+    // Pode Lançar
+    const { count: podeLancar, error: plError } = await supabase
+        .from('catalogo')
+        .select('*', { count: 'exact', head: true })
+        .eq('pode_lancar', true);
+    if (!plError) document.getElementById('podeLancarCount').innerText = podeLancar || 0;
 
     // Por Formato
     const { data: formatoData, error: formatoError } = await supabase
@@ -202,7 +209,7 @@ async function buscarProdutos(resetPage = true) {
     document.getElementById('goToPage').max = totalPages;
     document.getElementById('goToPage').value = currentPage;
 
-    tableBody.innerHTML = '——<td colspan="8" class="p-8 text-center text-zinc-500 animate-pulse">A carregar registos...————';
+    tableBody.innerHTML = '——<td colspan="9" class="p-8 text-center text-zinc-500 animate-pulse">A carregar registos...————';
     noResultsMsg.classList.add('hidden');
     addSection.classList.add('hidden');
 
@@ -222,7 +229,7 @@ async function buscarProdutos(resetPage = true) {
 
     if (error) {
         console.error('Erro na pesquisa:', error);
-        tableBody.innerHTML = '——<td colspan="8" class="p-8 text-center text-red-400">Falha ao carregar os dados.————';
+        tableBody.innerHTML = '——<td colspan="9" class="p-8 text-center text-red-400">Falha ao carregar os dados.————';
         return;
     }
 
@@ -273,6 +280,11 @@ function renderTable(data) {
         const takenDownBadge = item.taken_down 
             ? '<span class="bg-red-900/80 text-red-200 px-2 py-1 rounded-full text-xs border border-red-700">Sim</span>'
             : '<span class="bg-zinc-800 text-zinc-400 px-2 py-1 rounded-full text-xs">Não</span>';
+        const podeLancarBadge = item.pode_lancar === true 
+            ? '<span class="bg-purple-900/80 text-purple-200 px-2 py-1 rounded-full text-xs border border-purple-700">Sim</span>'
+            : (item.pode_lancar === false 
+                ? '<span class="bg-zinc-800 text-zinc-400 px-2 py-1 rounded-full text-xs">Não</span>'
+                : '<span class="bg-zinc-800 text-zinc-500 px-2 py-1 rounded-full text-xs">—</span>');
 
         tr.innerHTML = `
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
@@ -290,37 +302,43 @@ function renderTable(data) {
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Gravadora / Label</span>
                 <span class="text-zinc-400">${escapeHtml(gravadoraLabel)}</span>
-             </td>
+              </td>
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Prateleira</span>
                 <span class="editable-field inline-block" data-field="prateleira" data-id="${item.id}">
                     <span class="prateleira-display bg-zinc-800 px-2 py-1 rounded text-xs text-zinc-300 border border-zinc-700">${item.prateleira || '-'}</span>
                 </span>
-             </td>
+              </td>
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Formato</span>
                 <span class="editable-field inline-block" data-field="formato" data-id="${item.id}">
                     <span class="formato-display bg-zinc-800 px-2 py-1 rounded text-xs text-zinc-300 border border-zinc-700">${item.formato || '-'}</span>
                 </span>
-             </td>
+              </td>
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Nº do Tape</span>
                 <span class="editable-field inline-block" data-field="numero" data-id="${item.id}">
                     <span class="numero-display bg-zinc-800 px-2 py-1 rounded text-xs text-zinc-300 border border-zinc-700">${item.numero || '-'}</span>
                 </span>
-             </td>
+              </td>
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Stream Status</span>
                 <span class="editable-field inline-block" data-field="stream_status" data-id="${item.id}">
                     <span class="stream-status-display">${streamBadge}</span>
                 </span>
-             </td>
+              </td>
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Taken Down</span>
                 <span class="editable-field inline-block" data-field="taken_down" data-id="${item.id}">
                     <span class="taken-down-display">${takenDownBadge}</span>
                 </span>
-             </td>
+              </td>
+            <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
+                <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Pode Lançar</span>
+                <span class="editable-field inline-block" data-field="pode_lancar" data-id="${item.id}">
+                    <span class="pode-lancar-display">${podeLancarBadge}</span>
+                </span>
+              </td>
         `;
         tableBody.appendChild(tr);
     });
@@ -347,6 +365,11 @@ function iniciarEdicao(elemento) {
         const txt = displaySpan.innerText.trim();
         if (txt === 'On Stream') currentValue = 'On';
         else if (txt === 'Off Stream') currentValue = 'Off';
+        else currentValue = '';
+    } else if (field === 'pode_lancar') {
+        const txt = displaySpan.innerText.trim();
+        if (txt === 'Sim') currentValue = 'true';
+        else if (txt === 'Não') currentValue = 'false';
         else currentValue = '';
     } else {
         currentValue = displaySpan.innerText === '-' ? '' : displaySpan.innerText;
@@ -391,6 +414,16 @@ function iniciarEdicao(elemento) {
             `;
             inputElement.value = currentValue;
             break;
+        case 'pode_lancar':
+            inputElement = document.createElement('select');
+            inputElement.className = 'edit-select';
+            inputElement.innerHTML = `
+                <option value="">— Limpar —</option>
+                <option value="true">Sim</option>
+                <option value="false">Não</option>
+            `;
+            inputElement.value = currentValue;
+            break;
         case 'numero':
             inputElement = document.createElement('input');
             inputElement.type = 'text';
@@ -413,10 +446,11 @@ function iniciarEdicao(elemento) {
         if (field === 'taken_down') {
             novoValor = inputElement.value === 'true';
         } else if (field === 'stream_status') {
-            novoValor = inputElement.value || null; // se vazio, guarda null (ou string vazia? preferimos null)
-            if (novoValor === '') novoValor = null;
+            novoValor = inputElement.value || null;
+        } else if (field === 'pode_lancar') {
+            novoValor = inputElement.value === 'true' ? true : (inputElement.value === 'false' ? false : null);
         } else {
-            novoValor = inputElement.value || null; // para prateleira, formato, numero, titulo, artista
+            novoValor = inputElement.value || null;
         }
 
         const updateData = { [field]: novoValor };
@@ -449,6 +483,11 @@ async function salvarProduto() {
     btn.innerText = "A guardar...";
     btn.disabled = true;
 
+    let podeLancarVal = document.getElementById('addPodeLancar').value;
+    if (podeLancarVal === '') podeLancarVal = null;
+    else if (podeLancarVal === 'true') podeLancarVal = true;
+    else podeLancarVal = false;
+
     const novoProduto = {
         titulo, 
         artista,
@@ -457,7 +496,8 @@ async function salvarProduto() {
         formato: document.getElementById('addFormato').value || null,
         numero: document.getElementById('addNumero').value || null,
         stream_status: document.getElementById('addStream').value || null,
-        taken_down: document.getElementById('addTakenDown').value === 'true'
+        taken_down: document.getElementById('addTakenDown').value === 'true',
+        pode_lancar: podeLancarVal
     };
 
     const { error } = await supabase.from('catalogo').insert([novoProduto]);
@@ -478,6 +518,7 @@ async function salvarProduto() {
         document.getElementById('addFormato').value = '';
         document.getElementById('addStream').value = 'On';
         document.getElementById('addTakenDown').value = 'false';
+        document.getElementById('addPodeLancar').value = '';
         buscarProdutos(false);
     }
 }
@@ -499,7 +540,7 @@ async function exportarCSV() {
         return;
     }
 
-    const headers = ['Título', 'Artista', 'Gravadora', 'Prateleira', 'Formato', 'Nº do Tape', 'Stream Status', 'Taken Down'];
+    const headers = ['Título', 'Artista', 'Gravadora', 'Prateleira', 'Formato', 'Nº do Tape', 'Stream Status', 'Taken Down', 'Pode Lançar'];
     const rows = data.map(item => [
         item.titulo,
         item.artista,
@@ -508,7 +549,8 @@ async function exportarCSV() {
         item.formato || '',
         item.numero || '',
         item.stream_status || '',
-        item.taken_down ? 'Sim' : 'Não'
+        item.taken_down ? 'Sim' : 'Não',
+        item.pode_lancar === true ? 'Sim' : (item.pode_lancar === false ? 'Não' : '')
     ]);
 
     const csvContent = [headers, ...rows].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -543,7 +585,7 @@ async function exportarPDF() {
         return;
     }
 
-    const headers = ['Título', 'Artista', 'Gravadora', 'Prateleira', 'Formato', 'Nº Tape', 'Stream', 'Taken Down'];
+    const headers = ['Título', 'Artista', 'Gravadora', 'Prateleira', 'Formato', 'Nº Tape', 'Stream', 'Taken Down', 'Pode Lançar'];
     const rows = data.map(item => [
         item.titulo,
         item.artista,
@@ -552,7 +594,8 @@ async function exportarPDF() {
         item.formato || '',
         item.numero || '',
         item.stream_status || '',
-        item.taken_down ? 'Sim' : 'Não'
+        item.taken_down ? 'Sim' : 'Não',
+        item.pode_lancar === true ? 'Sim' : (item.pode_lancar === false ? 'Não' : '')
     ]);
 
     doc.text('Catálogo da Gravadora', 14, 10);
@@ -565,7 +608,7 @@ async function exportarPDF() {
         theme: 'striped',
         headStyles: { fillColor: [99, 102, 241], textColor: 255 },
         styles: { fontSize: 8, cellPadding: 2 },
-        columnStyles: { 0: { cellWidth: 50 }, 1: { cellWidth: 40 }, 2: { cellWidth: 40 } }
+        columnStyles: { 0: { cellWidth: 45 }, 1: { cellWidth: 35 }, 2: { cellWidth: 35 } }
     });
 
     doc.save(`catalogo_${new Date().toISOString().slice(0,19)}.pdf`);
