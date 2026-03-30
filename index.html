@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo da Gravadora</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        labelAccent: '#6366f1',
+                        labelDark: '#09090b',
+                        labelCard: '#18181b',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #18181b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+        optgroup { background: #27272a; color: #a1a1aa; font-weight: 600; }
+        option { background: #18181b; color: #e4e4e7; }
+        .editable-field {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .editable-field:hover {
+            background-color: rgba(99, 102, 241, 0.1);
+            border-radius: 0.375rem;
+        }
+        .edit-input, .edit-select {
+            background: #27272a;
+            border: 1px solid #3f3f46;
+            color: white;
+            border-radius: 0.375rem;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+            width: auto;
+            min-width: 100px;
+        }
+        .edit-input:focus, .edit-select:focus {
+            outline: none;
+            border-color: #6366f1;
+            ring: 1px solid #6366f1;
+        }
+        .nav-tab {
+            transition: all 0.2s;
+        }
+        .nav-tab.active {
+            background-color: #6366f1;
+            color: white;
+            border-color: #6366f1;
+        }
+    </style>
+</head>
+<body class="bg-labelDark text-zinc-300 font-sans antialiased p-4 md:p-8 min-h-screen">
+
+    <div class="max-w-7xl mx-auto">
+        <header class="mb-8 border-b border-zinc-800 pb-6 flex flex-wrap justify-between items-center gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-white tracking-tight uppercase">
+                    Catálogo <span class="text-labelAccent">Label</span>
+                </h1>
+                <p class="text-sm text-zinc-500 mt-1">Gestão de Acervo e Lançamentos</p>
+            </div>
+            <div class="flex gap-2">
+                <button id="btnExportCSV" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow-md">
+                    📄 Exportar CSV
+                </button>
+                <button id="btnExportPDF" class="bg-rose-600 hover:bg-rose-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow-md">
+                    📑 Exportar PDF
+                </button>
+            </div>
+        </header>
+
+        <!-- Menu de navegação -->
+        <div class="flex gap-2 mb-6 border-b border-zinc-800 pb-2">
+            <button id="tabCatalogo" class="nav-tab px-6 py-2 rounded-t-lg font-semibold bg-zinc-800 text-zinc-200 hover:bg-zinc-700 transition active">
+                📀 Catálogo
+            </button>
+            <button id="tabDashboard" class="nav-tab px-6 py-2 rounded-t-lg font-semibold bg-zinc-800 text-zinc-200 hover:bg-zinc-700 transition">
+                📊 Dashboard
+            </button>
+        </div>
+
+        <!-- Container do Catálogo (conteúdo principal) -->
+        <div id="catalogoContainer">
+            <!-- Barra de pesquisa e filtros -->
+            <div class="bg-labelCard p-4 rounded-xl border border-zinc-800 mb-8 shadow-lg">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div class="lg:col-span-2">
+                        <input type="text" id="searchInput" placeholder="Pesquisar artista, título ou gravadora..." 
+                               class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent focus:ring-1 focus:ring-labelAccent transition-all placeholder-zinc-500">
+                    </div>
+                    <select id="filterFormato" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none">
+                        <option value="">Formato (Todos)</option>
+                        <option value="TAPE">TAPE</option>
+                        <option value="CD">CD</option>
+                        <option value="Vinil">Vinil</option>
+                        <option value="DATE">DATE</option>
+                    </select>
+                    <select id="filterPrateleira" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none custom-scrollbar">
+                        <option value="">Prateleira (Todas)</option>
+                    </select>
+                    <select id="filterStream" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none">
+                        <option value="">Stream (Todos)</option>
+                        <option value="On">On Stream</option>
+                        <option value="Off">Off Stream</option>
+                    </select>
+                </div>
+                <div class="mt-4 flex flex-wrap gap-3 justify-between items-center">
+                    <button id="btnNovoGlobal" class="bg-zinc-700 hover:bg-zinc-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors shadow-md">
+                        + Incluir Novo
+                    </button>
+                    <button id="btnBuscar" class="bg-labelAccent hover:bg-indigo-500 text-white font-semibold py-3 px-8 rounded-lg transition-colors shadow-md shadow-indigo-500/20">
+                        Pesquisar Acervo
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mensagem de sem resultados -->
+            <div id="noResultsMsg" class="hidden bg-red-950/30 border border-red-900/50 text-red-200 p-4 rounded-xl mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <span>Nenhum registo encontrado para a pesquisa atual.</span>
+                <button id="btnShowAddNoResults" class="w-full sm:w-auto bg-zinc-100 hover:bg-white text-zinc-900 font-bold py-2 px-6 rounded-lg transition-colors">
+                    + Incluir Novo
+                </button>
+            </div>
+
+            <!-- Formulário de adição -->
+            <div id="addSection" class="hidden bg-labelCard p-6 rounded-xl border border-zinc-800 mb-8 shadow-lg">
+                <h3 class="text-xl font-semibold text-white mb-6 border-b border-zinc-800 pb-2">Registar Novo Produto</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <input type="text" id="addTitulo" placeholder="Título da Obra *" required class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent lg:col-span-2">
+                    <input type="text" id="addArtista" placeholder="Artista *" required class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent lg:col-span-2">
+                    <input type="text" id="addGravadora" placeholder="Gravadora" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent">
+                    <select id="addPrateleira" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none">
+                        <option value="" disabled selected>Selecione a Prateleira</option>
+                    </select>
+                    <select id="addFormato" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none">
+                        <option value="" disabled selected>Selecione o Formato</option>
+                        <option value="TAPE">TAPE</option>
+                        <option value="CD">CD</option>
+                        <option value="Vinil">Vinil</option>
+                        <option value="DATE">DATE</option>
+                    </select>
+                    <input type="text" id="addNumero" placeholder="Nº do tape" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent">
+                    <select id="addStream" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none lg:col-span-2">
+                        <option value="On">On Stream</option>
+                        <option value="Off">Off Stream</option>
+                    </select>
+                    <select id="addTakenDown" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-red-500 appearance-none lg:col-span-2">
+                        <option value="false">Ativo (Não foi retirado)</option>
+                        <option value="true">Taken Down (Retirado das plataformas)</option>
+                    </select>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-3 justify-end">
+                    <button id="btnCancelar" class="px-6 py-3 rounded-lg font-semibold text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors">Cancelar</button>
+                    <button id="btnSalvar" class="px-6 py-3 rounded-lg font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors shadow-lg shadow-emerald-900/20">Salvar no Catálogo</button>
+                </div>
+            </div>
+
+            <!-- Tabela responsiva -->
+            <div class="bg-transparent md:bg-labelCard md:border md:border-zinc-800 md:rounded-xl overflow-hidden md:shadow-lg">
+                <table class="w-full text-left border-collapse block md:table">
+                    <thead class="hidden md:table-header-group">
+                        <tr class="bg-zinc-900/50 text-zinc-400 text-xs uppercase tracking-wider">
+                            <th class="p-4 font-medium border-b border-zinc-800">Título</th>
+                            <th class="p-4 font-medium border-b border-zinc-800">Artista</th>
+                            <th class="p-4 font-medium border-b border-zinc-800">Gravadora / Label</th>
+                            <th class="p-4 font-medium border-b border-zinc-800">Prateleira</th>
+                            <th class="p-4 font-medium border-b border-zinc-800">Formato</th>
+                            <th class="p-4 font-medium border-b border-zinc-800">Nº do Tape</th>
+                            <th class="p-4 font-medium border-b border-zinc-800">Stream Status</th>
+                            <th class="p-4 font-medium border-b border-zinc-800 text-center">Taken Down</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="block md:table-row-group text-sm">
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginação -->
+            <div id="paginationControls" class="mt-6 flex flex-wrap items-center justify-center gap-4">
+                <button id="prevPage" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition">Anterior</button>
+                <span class="text-zinc-400">Página <span id="currentPage">1</span> de <span id="totalPages">1</span></span>
+                <button id="nextPage" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition">Próxima</button>
+                <div class="flex items-center gap-2">
+                    <label class="text-sm text-zinc-400">Ir para página:</label>
+                    <input type="number" id="goToPage" min="1" class="w-20 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-white text-center">
+                    <button id="btnGoToPage" class="px-3 py-1 bg-labelAccent hover:bg-indigo-500 rounded-lg text-white text-sm transition">Ir</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Container do Dashboard (inicialmente escondido) -->
+        <div id="dashboardContainer" class="hidden">
+            <div class="bg-labelCard p-6 rounded-xl border border-zinc-800 shadow-lg">
+                <h2 class="text-2xl font-bold text-white mb-6">Dashboard de Estatísticas</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" id="statsCards">
+                    <div class="bg-zinc-900 rounded-lg p-4 text-center">
+                        <p class="text-zinc-400 text-sm">Total de Itens</p>
+                        <p id="totalItems" class="text-3xl font-bold text-labelAccent">-</p>
+                    </div>
+                    <div class="bg-zinc-900 rounded-lg p-4 text-center">
+                        <p class="text-zinc-400 text-sm">On Stream</p>
+                        <p id="onStreamCount" class="text-3xl font-bold text-emerald-400">-</p>
+                    </div>
+                    <div class="bg-zinc-900 rounded-lg p-4 text-center">
+                        <p class="text-zinc-400 text-sm">Off Stream</p>
+                        <p id="offStreamCount" class="text-3xl font-bold text-amber-400">-</p>
+                    </div>
+                    <div class="bg-zinc-900 rounded-lg p-4 text-center">
+                        <p class="text-zinc-400 text-sm">Taken Down</p>
+                        <p id="takenDownCount" class="text-3xl font-bold text-red-400">-</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-zinc-900 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-white mb-3">Por Formato</h3>
+                        <div id="formatoStats" class="space-y-2"></div>
+                    </div>
+                    <div class="bg-zinc-900 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-white mb-3">Top Prateleiras</h3>
+                        <div id="prateleiraStats" class="space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module" src="./js/app.js"></script>
+</body>
+</html>
