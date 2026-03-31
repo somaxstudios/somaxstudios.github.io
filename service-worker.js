@@ -45,30 +45,54 @@ self.addEventListener("activate", event => {
 
 // 🌐 FETCH (estratégia inteligente)
 self.addEventListener("fetch", event => {
+
+  // 🚫 Ignora tudo que não for GET ou vindo de extensões
+  if (
+    event.request.method !== "GET" ||
+    event.request.url.startsWith("chrome-extension://")
+  ) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
 
-      // Se já estiver em cache → retorna
+      // ✅ Se já estiver em cache → retorna direto
       if (cachedResponse) {
         return cachedResponse;
       }
 
-      // Senão → busca da rede
+      // 🌐 Senão → busca da rede
       return fetch(event.request)
         .then(networkResponse => {
 
-          // Salva no cache dinamicamente
-          return caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, networkResponse.clone());
+          // 🚫 Não cacheia respostas inválidas
+          if (
+            !networkResponse ||
+            networkResponse.status !== 200 ||
+            networkResponse.type !== "basic"
+          ) {
             return networkResponse;
+          }
+
+          // 🔁 Clona a resposta
+          const responseClone = networkResponse.clone();
+
+          // 💾 Salva no cache
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, responseClone);
           });
+
+          return networkResponse;
 
         })
         .catch(() => {
-          // Fallback offline (opcional)
+
+          // 📴 Se estiver offline e for navegação → volta pro index
           if (event.request.mode === "navigate") {
             return caches.match("./index.html");
           }
+
         });
 
     })
