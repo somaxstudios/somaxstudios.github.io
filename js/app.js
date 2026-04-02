@@ -13,6 +13,7 @@ const searchInput = document.getElementById('searchInput');
 const filterFormato = document.getElementById('filterFormato');
 const filterPrateleira = document.getElementById('filterPrateleira');
 const filterStream = document.getElementById('filterStream');
+const filterPodeLancar = document.getElementById('filterPodeLancar');
 const btnBuscar = document.getElementById('btnBuscar');
 const btnNovoGlobal = document.getElementById('btnNovoGlobal');
 const btnShowAddNoResults = document.getElementById('btnShowAddNoResults');
@@ -28,6 +29,7 @@ let currentSearch = '';
 let currentFormato = '';
 let currentPrateleira = '';
 let currentStream = '';
+let currentPodeLancar = '';
 
 // --- GERAÇÃO DAS OPÇÕES DE PRATELEIRA ---
 function gerarOpcoesPrateleiras() {
@@ -165,7 +167,7 @@ function mostrarDashboard() {
     carregarDashboard();
 }
 
-// --- FUNÇÃO PARA BUSCAR TOTAL DE REGISTOS (com filtros) ---
+// --- FUNÇÃO PARA BUSCAR TOTAL DE REGISTOS (com filtros incluindo pode_lancar) ---
 async function fetchTotalCount() {
     let query = supabase.from('catalogo').select('*', { count: 'exact', head: true });
 
@@ -175,6 +177,7 @@ async function fetchTotalCount() {
     if (currentFormato) query = query.eq('formato', currentFormato);
     if (currentPrateleira) query = query.eq('prateleira', currentPrateleira);
     if (currentStream) query = query.eq('stream_status', currentStream);
+    if (currentPodeLancar !== '') query = query.eq('pode_lancar', currentPodeLancar === 'true');
 
     const { count, error } = await query;
     if (error) {
@@ -184,7 +187,7 @@ async function fetchTotalCount() {
     return count || 0;
 }
 
-// --- FUNÇÃO PARA BUSCAR PRODUTOS (com paginação) ---
+// --- FUNÇÃO PARA BUSCAR PRODUTOS (com paginação e filtro pode_lancar) ---
 async function buscarProdutos(resetPage = true) {
     if (resetPage) {
         currentPage = 1;
@@ -194,6 +197,7 @@ async function buscarProdutos(resetPage = true) {
     currentFormato = filterFormato.value;
     currentPrateleira = filterPrateleira.value;
     currentStream = filterStream.value;
+    currentPodeLancar = filterPodeLancar.value;
 
     totalRecords = await fetchTotalCount();
     totalPages = Math.ceil(totalRecords / itemsPerPage);
@@ -209,7 +213,7 @@ async function buscarProdutos(resetPage = true) {
     document.getElementById('goToPage').max = totalPages;
     document.getElementById('goToPage').value = currentPage;
 
-    tableBody.innerHTML = '——<td colspan="9" class="p-8 text-center text-zinc-500 animate-pulse">A carregar registos...————';
+    tableBody.innerHTML = '——<td colspan="9" class="p-8 text-center text-zinc-500 animate-pulse">A carregar registos...——</td>——';
     noResultsMsg.classList.add('hidden');
     addSection.classList.add('hidden');
 
@@ -224,12 +228,13 @@ async function buscarProdutos(resetPage = true) {
     if (currentFormato) query = query.eq('formato', currentFormato);
     if (currentPrateleira) query = query.eq('prateleira', currentPrateleira);
     if (currentStream) query = query.eq('stream_status', currentStream);
+    if (currentPodeLancar !== '') query = query.eq('pode_lancar', currentPodeLancar === 'true');
 
     const { data, error } = await query;
 
     if (error) {
         console.error('Erro na pesquisa:', error);
-        tableBody.innerHTML = '——<td colspan="9" class="p-8 text-center text-red-400">Falha ao carregar os dados.————';
+        tableBody.innerHTML = '——<td colspan="9" class="p-8 text-center text-red-400">Falha ao carregar os dados.——</td>——';
         return;
     }
 
@@ -253,7 +258,7 @@ function gerarOptionsPrateleiraHTML(valorAtual) {
     return html;
 }
 
-// --- RENDERIZAÇÃO DA TABELA COM EDIÇÃO INLINE ---
+// --- RENDERIZAÇÃO DA TABELA COM EDIÇÃO INLINE (inclui pode_lancar) ---
 function renderTable(data) {
     tableBody.innerHTML = '';
 
@@ -351,7 +356,7 @@ function renderTable(data) {
     });
 }
 
-// --- EDIÇÃO INLINE (com opções de limpar) ---
+// --- EDIÇÃO INLINE (com opções de limpar para todos, incluindo pode_lancar) ---
 function iniciarEdicao(elemento) {
     const field = elemento.dataset.field;
     const id = elemento.dataset.id;
@@ -532,6 +537,7 @@ async function exportarCSV() {
     if (currentFormato) query = query.eq('formato', currentFormato);
     if (currentPrateleira) query = query.eq('prateleira', currentPrateleira);
     if (currentStream) query = query.eq('stream_status', currentStream);
+    if (currentPodeLancar !== '') query = query.eq('pode_lancar', currentPodeLancar === 'true');
 
     const { data, error } = await query;
     if (error) {
@@ -577,6 +583,7 @@ async function exportarPDF() {
     if (currentFormato) query = query.eq('formato', currentFormato);
     if (currentPrateleira) query = query.eq('prateleira', currentPrateleira);
     if (currentStream) query = query.eq('stream_status', currentStream);
+    if (currentPodeLancar !== '') query = query.eq('pode_lancar', currentPodeLancar === 'true');
 
     const { data, error } = await query;
     if (error) {
@@ -598,7 +605,7 @@ async function exportarPDF() {
         item.pode_lancar === true ? 'Sim' : (item.pode_lancar === false ? 'Não' : '')
     ]);
 
-    doc.text('Catálogo da Gravadora', 14, 10);
+    doc.text('Catálogo Somax', 14, 10);
     doc.setFontSize(10);
     doc.text(`Gerado em: ${new Date().toLocaleString()}`, 14, 18);
     doc.autoTable({
@@ -632,6 +639,7 @@ searchInput.addEventListener('input', debounceBuscar);
 filterFormato.addEventListener('change', () => buscarProdutos(true));
 filterPrateleira.addEventListener('change', () => buscarProdutos(true));
 filterStream.addEventListener('change', () => buscarProdutos(true));
+filterPodeLancar.addEventListener('change', () => buscarProdutos(true));
 btnBuscar.addEventListener('click', () => buscarProdutos(true));
 
 btnNovoGlobal.addEventListener('click', abrirFormularioComPreenchimento);
