@@ -29,6 +29,29 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
         optgroup { background: #27272a; color: #a1a1aa; font-weight: 600; }
         option { background: #18181b; color: #e4e4e7; }
+        .editable-field {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .editable-field:hover {
+            background-color: rgba(99, 102, 241, 0.1);
+            border-radius: 0.375rem;
+        }
+        .edit-input, .edit-select {
+            background: #27272a;
+            border: 1px solid #3f3f46;
+            color: white;
+            border-radius: 0.375rem;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+            width: auto;
+            min-width: 100px;
+        }
+        .edit-input:focus, .edit-select:focus {
+            outline: none;
+            border-color: #6366f1;
+            ring: 1px solid #6366f1;
+        }
         .nav-tab {
             transition: all 0.2s;
         }
@@ -36,11 +59,6 @@
             background-color: #6366f1;
             color: white;
             border-color: #6366f1;
-        }
-        /* Modal styles */
-        .modal-overlay {
-            background-color: rgba(0,0,0,0.7);
-            backdrop-filter: blur(4px);
         }
     </style>
 </head>
@@ -160,7 +178,7 @@
                 </div>
             </div>
 
-            <!-- Tabela responsiva com botão Editar -->
+            <!-- Tabela responsiva -->
             <div class="bg-transparent md:bg-labelCard md:border md:border-zinc-800 md:rounded-xl overflow-hidden md:shadow-lg">
                 <table class="w-full text-left border-collapse block md:table">
                     <thead class="hidden md:table-header-group">
@@ -174,7 +192,6 @@
                             <th class="p-4 font-medium border-b border-zinc-800">Stream Status</th>
                             <th class="p-4 font-medium border-b border-zinc-800">Taken Down</th>
                             <th class="p-4 font-medium border-b border-zinc-800">Pode Lançar</th>
-                            <th class="p-4 font-medium border-b border-zinc-800 text-center">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody" class="block md:table-row-group text-sm">
@@ -234,53 +251,7 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Modal de Edição -->
-    <div id="editModal" class="fixed inset-0 z-50 hidden overflow-y-auto modal-overlay">
-        <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="bg-labelCard rounded-xl border border-zinc-800 shadow-2xl w-full max-w-3xl">
-                <div class="p-6 border-b border-zinc-800 flex justify-between items-center">
-                    <h3 class="text-xl font-semibold text-white">Editar Produto</h3>
-                    <button id="closeModal" class="text-zinc-400 hover:text-white text-2xl">&times;</button>
-                </div>
-                <div class="p-6">
-                    <input type="hidden" id="editId">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <input type="text" id="editTitulo" placeholder="Título" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white">
-                        <input type="text" id="editArtista" placeholder="Artista" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white">
-                        <input type="text" id="editGravadora" placeholder="Gravadora" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white">
-                        <select id="editPrateleira" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white"></select>
-                        <select id="editFormato" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white">
-                            <option value="">— Limpar —</option>
-                            <option value="TAPE">TAPE</option>
-                            <option value="CD">CD</option>
-                            <option value="Vinil">Vinil</option>
-                            <option value="DATE">DATE</option>
-                        </select>
-                        <input type="text" id="editNumero" placeholder="Nº do Tape" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white">
-                        <select id="editStream" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white">
-                            <option value="">— Limpar —</option>
-                            <option value="On">On Stream</option>
-                            <option value="Off">Off Stream</option>
-                        </select>
-                        <select id="editTakenDown" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white">
-                            <option value="false">Não</option>
-                            <option value="true">Sim</option>
-                        </select>
-                        <select id="editPodeLancar" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white">
-                            <option value="">— Limpar —</option>
-                            <option value="true">Sim</option>
-                            <option value="false">Não</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="p-6 border-t border-zinc-800 flex justify-end gap-3">
-                    <button id="btnCancelEdit" class="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white">Cancelar</button>
-                    <button id="btnSaveEdit" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white">Salvar Alterações</button>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script type="module" src="./js/app.js"></script>
