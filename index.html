@@ -96,7 +96,7 @@
         <div id="catalogoContainer">
             <!-- Barra de pesquisa e filtros -->
             <div class="bg-labelCard p-4 rounded-xl border border-zinc-800 mb-8 shadow-lg">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
                     <div class="lg:col-span-2">
                         <input type="text" id="searchInput" placeholder="Pesquisar artista, título ou gravadora..." 
                                class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent focus:ring-1 focus:ring-labelAccent transition-all placeholder-zinc-500">
@@ -115,6 +115,11 @@
                         <option value="">Stream (Todos)</option>
                         <option value="On">On Stream</option>
                         <option value="Off">Off Stream</option>
+                    </select>
+                    <select id="filterPodeLancar" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none">
+                        <option value="">Pode Lançar (Todos)</option>
+                        <option value="true">Sim</option>
+                        <option value="false">Não</option>
                     </select>
                 </div>
                 <div class="mt-4 flex flex-wrap gap-3 justify-between items-center">
@@ -153,15 +158,15 @@
                         <option value="DATE">DATE</option>
                     </select>
                     <input type="text" id="addNumero" placeholder="Nº do tape" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent">
-                    <select id="addStream" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none lg:col-span-2">
+                    <select id="addStream" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none">
                         <option value="On">On Stream</option>
                         <option value="Off">Off Stream</option>
                     </select>
-                    <select id="addTakenDown" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-red-500 appearance-none lg:col-span-2">
+                    <select id="addTakenDown" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-red-500 appearance-none">
                         <option value="false">Ativo (Não foi retirado)</option>
                         <option value="true">Taken Down (Retirado das plataformas)</option>
                     </select>
-                    <select id="addPodeLancar" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none lg:col-span-2">
+                    <select id="addPodeLancar" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none">
                         <option value="" selected>Pode Lançar? (Selecione)</option>
                         <option value="true">Sim</option>
                         <option value="false">Não</option>
@@ -187,7 +192,7 @@
                             <th class="p-4 font-medium border-b border-zinc-800">Stream Status</th>
                             <th class="p-4 font-medium border-b border-zinc-800">Taken Down</th>
                             <th class="p-4 font-medium border-b border-zinc-800">Pode Lançar</th>
-                         </tr>
+                        </tr>
                     </thead>
                     <tbody id="tableBody" class="block md:table-row-group text-sm">
                     </tbody>
@@ -251,13 +256,13 @@
 
     <script type="module" src="./js/app.js"></script>
     <script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("service-worker.js")
-      .then(reg => console.log("SW registrado", reg))
-      .catch(err => console.log("Erro SW", err));
-  });
-}
-</script>
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("service-worker.js")
+                    .then(reg => console.log("SW registrado", reg))
+                    .catch(err => console.log("Erro SW", err));
+            });
+        }
+    </script>
 </body>
 </html>
