@@ -200,7 +200,14 @@ function gerarOptionsPrateleiraHTML(valorAtual) {
 
 // --- FUNÇÃO AUXILIAR PARA ATUALIZAR APENAS A LINHA NO DOM (sem recarregar tudo) ---
 function atualizarCelulaLocalmente(linha, field, novoValor, item) {
-    const displaySpan = linha.querySelector(`.${field}-display`);
+    // Mapeamento correto: o HTML usa classes com hífen para esses campos
+    let displayClassName = '';
+    if (field === 'stream_status') displayClassName = 'stream-status-display';
+    else if (field === 'taken_down') displayClassName = 'taken-down-display';
+    else if (field === 'pode_lancar') displayClassName = 'pode-lancar-display';
+    else displayClassName = `${field}-display`;
+
+    const displaySpan = linha.querySelector(`.${displayClassName}`);
     if (!displaySpan) return;
 
     if (field === 'stream_status') {
@@ -277,43 +284,43 @@ function renderTable(data) {
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Gravadora / Label</span>
                 <span class="text-zinc-400">${escapeHtml(gravadoraLabel)}</span>
-            </td>
+             </td>
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Prateleira</span>
                 <span class="editable-field" data-field="prateleira" data-id="${item.id}">
                     <span class="prateleira-display bg-zinc-800 px-2 py-1 rounded text-xs text-zinc-300 border border-zinc-700">${item.prateleira || '-'}</span>
                 </span>
-            </td>
+             </td>
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Formato</span>
                 <span class="editable-field" data-field="formato" data-id="${item.id}">
                     <span class="formato-display bg-zinc-800 px-2 py-1 rounded text-xs text-zinc-300 border border-zinc-700">${item.formato || '-'}</span>
                 </span>
-            </td>
+             </td>
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Nº do Tape</span>
                 <span class="editable-field" data-field="numero" data-id="${item.id}">
                     <span class="numero-display bg-zinc-800 px-2 py-1 rounded text-xs text-zinc-300 border border-zinc-700">${item.numero || '-'}</span>
                 </span>
-            </td>
+             </td>
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Stream Status</span>
                 <span class="editable-field" data-field="stream_status" data-id="${item.id}">
                     <span class="stream-status-display">${streamBadge}</span>
                 </span>
-            </td>
+             </td>
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Taken Down</span>
                 <span class="editable-field" data-field="taken_down" data-id="${item.id}">
                     <span class="taken-down-display">${takenDownBadge}</span>
                 </span>
-            </td>
+             </td>
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Pode Lançar</span>
                 <span class="editable-field" data-field="pode_lancar" data-id="${item.id}">
                     <span class="pode-lancar-display">${podeLancarBadge}</span>
                 </span>
-            </td>
+             </td>
         `;
         tableBody.appendChild(tr);
     });
@@ -327,11 +334,19 @@ function renderTable(data) {
     });
 }
 
-// --- EDIÇÃO INLINE (agora com atualização local e sem recarregar a página) ---
+// --- EDIÇÃO INLINE (agora com nomes de classes corrigidos) ---
 function iniciarEdicao(elemento) {
     const field = elemento.dataset.field;
     const id = elemento.dataset.id;
-    const displaySpan = elemento.querySelector(`.${field}-display`);
+
+    // Mapeamento correto para o nome da classe do span de exibição
+    let displayClassName = '';
+    if (field === 'stream_status') displayClassName = 'stream-status-display';
+    else if (field === 'taken_down') displayClassName = 'taken-down-display';
+    else if (field === 'pode_lancar') displayClassName = 'pode-lancar-display';
+    else displayClassName = `${field}-display`;
+
+    const displaySpan = elemento.querySelector(`.${displayClassName}`);
     if (!displaySpan) return;
 
     // Obter valor atual
@@ -427,36 +442,16 @@ function iniciarEdicao(elemento) {
         const { error } = await supabase.from('catalogo').update(updateData).eq('id', id);
         if (error) {
             alert('Erro ao atualizar campo.');
-            // Restaurar o display original recarregando a linha? Melhor recarregar a tabela para manter consistência.
             buscarProdutos(false);
         } else {
             // Atualizar localmente a célula sem recarregar a página inteira
             const linha = elemento.closest('tr');
-            // Precisamos do item atualizado? Vamos apenas atualizar o display com o novo valor
             atualizarCelulaLocalmente(linha, field, novoValor, {});
             // Recolocar o span editável de volta (mas mantendo o evento)
             const novoSpan = document.createElement('span');
-            novoSpan.className = `${field}-display`;
-            if (field === 'stream_status') {
-                const badge = novoValor === 'On' 
-                    ? '<span class="bg-emerald-900/80 text-emerald-200 px-2 py-1 rounded-full text-xs border border-emerald-700">On Stream</span>'
-                    : (novoValor === 'Off' 
-                        ? '<span class="bg-amber-900/80 text-amber-200 px-2 py-1 rounded-full text-xs border border-amber-700">Off Stream</span>'
-                        : '<span class="bg-zinc-800 text-zinc-400 px-2 py-1 rounded-full text-xs">—</span>');
-                novoSpan.innerHTML = badge;
-            } else if (field === 'taken_down') {
-                novoSpan.innerHTML = novoValor ? '<span class="bg-red-900/80 text-red-200 px-2 py-1 rounded-full text-xs border border-red-700">Sim</span>' : '<span class="bg-zinc-800 text-zinc-400 px-2 py-1 rounded-full text-xs">Não</span>';
-            } else if (field === 'pode_lancar') {
-                novoSpan.innerHTML = novoValor === true 
-                    ? '<span class="bg-purple-900/80 text-purple-200 px-2 py-1 rounded-full text-xs border border-purple-700">Sim</span>'
-                    : (novoValor === false ? '<span class="bg-zinc-800 text-zinc-400 px-2 py-1 rounded-full text-xs">Não</span>' : '<span class="bg-zinc-800 text-zinc-500 px-2 py-1 rounded-full text-xs">—</span>');
-            } else if (field === 'prateleira' || field === 'formato' || field === 'numero') {
-                novoSpan.innerText = novoValor || '-';
-                novoSpan.className = `${field}-display bg-zinc-800 px-2 py-1 rounded text-xs text-zinc-300 border border-zinc-700`;
-            } else {
-                novoSpan.innerText = novoValor || '';
-                novoSpan.className = `${field}-display text-white`;
-            }
+            novoSpan.className = displayClassName;
+            // Copiar o estilo visual já atualizado pela função acima
+            novoSpan.innerHTML = displaySpan.innerHTML;
             elemento.innerHTML = '';
             elemento.appendChild(novoSpan);
             // Recriar o evento de clique no elemento pai (editable-field)
@@ -465,11 +460,6 @@ function iniciarEdicao(elemento) {
                 iniciarEdicao(elemento);
             });
         }
-    };
-
-    const cancelar = () => {
-        // Restaurar o display original sem salvar
-        buscarProdutos(false);
     };
 
     inputElement.addEventListener('blur', salvar);
