@@ -296,7 +296,7 @@ async function buscarProdutos(resetPage = true) {
 
     tableBody.innerHTML = `
         <tr>
-            <td colspan="9" class="p-8 text-center text-zinc-500 animate-pulse">
+            <td colspan="10" class="p-8 text-center text-zinc-500 animate-pulse">
                 A carregar registos...
             </td>
         </tr>
@@ -345,7 +345,7 @@ async function buscarProdutos(resetPage = true) {
         console.error('Erro ao buscar catálogo:', error);
         tableBody.innerHTML = `
             <tr>
-                <td colspan="9" class="p-8 text-center text-red-400">
+                <td colspan="10" class="p-8 text-center text-red-400">
                     Falha ao carregar os dados.
                 </td>
             </tr>
@@ -393,7 +393,9 @@ function renderTable(data) {
 
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Gravadora / Label</span>
-                <span class="text-zinc-400">${escapeHtml(gravadoraLabel)}</span>
+                <span class="editable-field" data-field="gravadora" data-id="${item.id}" data-value="${escapeAttr(item.gravadora || '')}">
+                    <span class="gravadora-display text-zinc-400">${escapeHtml(gravadoraLabel)}</span>
+                </span>
             </td>
 
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
@@ -437,9 +439,32 @@ function renderTable(data) {
                     <span class="pode-lancar-display">${badgePodeLancar(item.pode_lancar)}</span>
                 </span>
             </td>
+
+            <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
+                <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Ações</span>
+                <button class="delete-btn bg-red-800/40 hover:bg-red-700 text-white text-xs px-3 py-1 rounded transition" data-id="${item.id}">
+                    🗑️ Excluir
+                </button>
+            </td>
         `;
 
         tableBody.appendChild(tr);
+
+        // Evento de exclusão
+        tr.querySelector('.delete-btn')?.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const id = e.currentTarget.dataset.id;
+            const confirmar = confirm("Tem certeza que deseja excluir este produto permanentemente?");
+            if (confirmar) {
+                const { error } = await supabase.from('catalogo').delete().eq('id', id);
+                if (error) {
+                    alert("Erro ao excluir: " + error.message);
+                } else {
+                    buscarProdutos(true);
+                    carregarDashboard();
+                }
+            }
+        });
     });
 
     document.querySelectorAll('.editable-field').forEach(el => {
@@ -511,6 +536,13 @@ function iniciarEdicao(elemento) {
                 <option value="true">Sim</option>
                 <option value="false">Não</option>
             `;
+            inputElement.value = currentValue;
+            break;
+
+        case 'gravadora':
+            inputElement = document.createElement('input');
+            inputElement.type = 'text';
+            inputElement.className = 'edit-input';
             inputElement.value = currentValue;
             break;
 
@@ -832,6 +864,26 @@ document.getElementById('btnExportCSV').addEventListener('click', exportarCSV);
 document.getElementById('btnExportPDF').addEventListener('click', exportarPDF);
 document.getElementById('tabCatalogo').addEventListener('click', mostrarCatalogo);
 document.getElementById('tabDashboard').addEventListener('click', mostrarDashboard);
+
+// --- FILTROS RECOLHÍVEIS ---
+const filterContent = document.getElementById('filterContent');
+const toggleBtn = document.getElementById('toggleFiltersBtn');
+
+if (filterContent && toggleBtn) {
+    let filtersVisible = false; // começa fechado
+    toggleBtn.addEventListener('click', () => {
+        if (filtersVisible) {
+            filterContent.style.display = 'none';
+            toggleBtn.innerHTML = '<span>🔍</span> Filtros';
+        } else {
+            filterContent.style.display = 'block';
+            toggleBtn.innerHTML = '<span>✖</span> Fechar';
+        }
+        filtersVisible = !filtersVisible;
+    });
+    // Inicialmente escondido
+    filterContent.style.display = 'none';
+}
 
 // Inicialização
 gerarOpcoesPrateleiras();

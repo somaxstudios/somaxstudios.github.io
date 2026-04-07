@@ -114,53 +114,58 @@
         <div id="catalogoContainer">
             <!-- Barra de pesquisa e filtros -->
             <div class="bg-labelCard p-4 rounded-xl border border-zinc-800 mb-8 shadow-lg">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-8 gap-4">
-                    <div class="lg:col-span-2">
-                        <input
-                            type="text"
-                            id="searchInput"
-                            placeholder="Pesquisar artista, título ou gravadora..."
-                            class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent focus:ring-1 focus:ring-labelAccent transition-all placeholder-zinc-500"
-                        >
+                <!-- Campo de busca sempre visível + botão Filtros -->
+                <div class="flex flex-col md:flex-row gap-4 mb-4">
+                    <div class="flex-1">
+                        <input type="text" id="searchInput" placeholder="Pesquisar artista, título ou gravadora..." class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent focus:ring-1 focus:ring-labelAccent transition-all placeholder-zinc-500">
                     </div>
-
-                    <select id="filterFormato" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none">
-                        <option value="">Formato (Todos)</option>
-                        <option value="TAPE">TAPE</option>
-                        <option value="CD">CD</option>
-                        <option value="Vinil">Vinil</option>
-                        <option value="DATE">DATE</option>
-                    </select>
-
-                    <select id="filterPrateleira" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none custom-scrollbar">
-                        <option value="">Prateleira (Todas)</option>
-                    </select>
-
-                    <select id="filterStream" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none">
-                        <option value="">Stream (Todos)</option>
-                        <option value="On">On Stream</option>
-                        <option value="Off">Off Stream</option>
-                    </select>
-
-                    <select id="filterPodeLancar" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none">
-                        <option value="">Pode Lançar (Todos)</option>
-                        <option value="true">Sim</option>
-                        <option value="false">Não</option>
-                    </select>
-
-                    <select id="filterGravadora" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none">
-                        <option value="">Gravadora / Label (Todas)</option>
-                    </select>
-
-                    <select id="sortBy" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none">
-                        <option value="created_desc">Mais recentes</option>
-                        <option value="titulo_asc">Título A-Z</option>
-                        <option value="titulo_desc">Título Z-A</option>
-                        <option value="artista_asc">Artista A-Z</option>
-                        <option value="artista_desc">Artista Z-A</option>
-                    </select>
+                    <button id="toggleFiltersBtn" class="bg-zinc-700 hover:bg-zinc-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors shadow-md flex items-center justify-center gap-2">
+                        <span>🔍</span> Filtros
+                    </button>
                 </div>
 
+                <!-- Filtros adicionais (recolhíveis) -->
+                <div id="filterContent" class="hidden mt-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+                        <select id="filterFormato" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none">
+                            <option value="">Formato (Todos)</option>
+                            <option value="TAPE">TAPE</option>
+                            <option value="CD">CD</option>
+                            <option value="Vinil">Vinil</option>
+                            <option value="DATE">DATE</option>
+                        </select>
+
+                        <select id="filterPrateleira" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none custom-scrollbar">
+                            <option value="">Prateleira (Todas)</option>
+                        </select>
+
+                        <select id="filterStream" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none">
+                            <option value="">Stream (Todos)</option>
+                            <option value="On">On Stream</option>
+                            <option value="Off">Off Stream</option>
+                        </select>
+
+                        <select id="filterPodeLancar" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none">
+                            <option value="">Pode Lançar (Todos)</option>
+                            <option value="true">Sim</option>
+                            <option value="false">Não</option>
+                        </select>
+
+                        <select id="filterGravadora" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none">
+                            <option value="">Gravadora / Label (Todas)</option>
+                        </select>
+
+                        <select id="sortBy" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none">
+                            <option value="created_desc">Mais recentes</option>
+                            <option value="titulo_asc">Título A-Z</option>
+                            <option value="titulo_desc">Título Z-A</option>
+                            <option value="artista_asc">Artista A-Z</option>
+                            <option value="artista_desc">Artista Z-A</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Botões de ação -->
                 <div class="mt-4 flex flex-wrap gap-3 justify-between items-center">
                     <button id="btnNovoGlobal" class="bg-zinc-700 hover:bg-zinc-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors shadow-md">
                         + Incluir Novo
@@ -239,6 +244,7 @@
                             <th class="p-4 font-medium border-b border-zinc-800">Stream Status</th>
                             <th class="p-4 font-medium border-b border-zinc-800">Taken Down</th>
                             <th class="p-4 font-medium border-b border-zinc-800">Pode Lançar</th>
+                            <th class="p-4 font-medium border-b border-zinc-800">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody" class="block md:table-row-group text-sm"></tbody>
