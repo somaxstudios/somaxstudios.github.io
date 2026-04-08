@@ -78,6 +78,15 @@
             color: white;
             border-color: #6366f1;
         }
+
+        /* Estilo para as barras clicáveis */
+        .prateleira-bar {
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .prateleira-bar:hover {
+            opacity: 0.8;
+        }
     </style>
 </head>
 <body class="bg-labelDark text-zinc-300 font-sans antialiased p-4 md:p-8 min-h-screen">
@@ -114,7 +123,6 @@
         <div id="catalogoContainer">
             <!-- Barra de pesquisa e filtros -->
             <div class="bg-labelCard p-4 rounded-xl border border-zinc-800 mb-8 shadow-lg">
-                <!-- Campo de busca sempre visível + botão Filtros -->
                 <div class="flex flex-col md:flex-row gap-4 mb-4">
                     <div class="flex-1">
                         <input type="text" id="searchInput" placeholder="Pesquisar artista, título ou gravadora..." class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent focus:ring-1 focus:ring-labelAccent transition-all placeholder-zinc-500">
@@ -124,7 +132,6 @@
                     </button>
                 </div>
 
-                <!-- Filtros adicionais (recolhíveis) -->
                 <div id="filterContent" class="hidden mt-4">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
                         <select id="filterFormato" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none">
@@ -165,7 +172,6 @@
                     </div>
                 </div>
 
-                <!-- Botões de ação -->
                 <div class="mt-4 flex flex-wrap gap-3 justify-between items-center">
                     <button id="btnNovoGlobal" class="bg-zinc-700 hover:bg-zinc-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors shadow-md">
                         + Incluir Novo
@@ -176,7 +182,6 @@
                 </div>
             </div>
 
-            <!-- Mensagem de sem resultados -->
             <div id="noResultsMsg" class="hidden bg-red-950/30 border border-red-900/50 text-red-200 p-4 rounded-xl mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <span>Nenhum registo encontrado para a pesquisa atual.</span>
                 <button id="btnShowAddNoResults" class="w-full sm:w-auto bg-zinc-100 hover:bg-white text-zinc-900 font-bold py-2 px-6 rounded-lg transition-colors">
@@ -184,19 +189,15 @@
                 </button>
             </div>
 
-            <!-- Formulário de adição -->
             <div id="addSection" class="hidden bg-labelCard p-6 rounded-xl border border-zinc-800 mb-8 shadow-lg">
                 <h3 class="text-xl font-semibold text-white mb-6 border-b border-zinc-800 pb-2">Registar Novo Produto</h3>
-
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     <input type="text" id="addTitulo" placeholder="Título da Obra *" required class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent lg:col-span-2">
                     <input type="text" id="addArtista" placeholder="Artista *" required class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent lg:col-span-2">
                     <input type="text" id="addGravadora" placeholder="Gravadora" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent">
-
                     <select id="addPrateleira" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none">
                         <option value="" disabled selected>Selecione a Prateleira</option>
                     </select>
-
                     <select id="addFormato" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none">
                         <option value="" disabled selected>Selecione o Formato</option>
                         <option value="TAPE">TAPE</option>
@@ -204,33 +205,27 @@
                         <option value="Vinil">Vinil</option>
                         <option value="DATE">DATE</option>
                     </select>
-
                     <input type="text" id="addNumero" placeholder="Nº do tape" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent">
-
                     <select id="addStream" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none">
                         <option value="On">On Stream</option>
                         <option value="Off">Off Stream</option>
                     </select>
-
                     <select id="addTakenDown" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-red-500 appearance-none">
                         <option value="false">Ativo (Não foi retirado)</option>
                         <option value="true">Taken Down (Retirado das plataformas)</option>
                     </select>
-
                     <select id="addPodeLancar" class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-labelAccent appearance-none">
                         <option value="" selected>Pode Lançar? (Selecione)</option>
                         <option value="true">Sim</option>
                         <option value="false">Não</option>
                     </select>
                 </div>
-
                 <div class="flex flex-col sm:flex-row gap-3 justify-end">
                     <button id="btnCancelar" class="px-6 py-3 rounded-lg font-semibold text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors">Cancelar</button>
                     <button id="btnSalvar" class="px-6 py-3 rounded-lg font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors shadow-lg shadow-emerald-900/20">Salvar no Catálogo</button>
                 </div>
             </div>
 
-            <!-- Tabela responsiva -->
             <div class="bg-transparent md:bg-labelCard md:border md:border-zinc-800 md:rounded-xl overflow-hidden md:shadow-lg">
                 <table class="w-full text-left border-collapse block md:table">
                     <thead class="hidden md:table-header-group">
@@ -251,20 +246,16 @@
                 </table>
             </div>
 
-            <!-- Paginação -->
             <div id="paginationControls" class="mt-6 flex flex-wrap items-center justify-center gap-4">
                 <button id="prevPage" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition">
                     Anterior
                 </button>
-
                 <span class="text-zinc-400">
                     Página <span id="currentPage">1</span> de <span id="totalPages">1</span>
                 </span>
-
                 <button id="nextPage" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition">
                     Próxima
                 </button>
-
                 <div class="flex items-center gap-2">
                     <label class="text-sm text-zinc-400">Ir para página:</label>
                     <input type="number" id="goToPage" min="1" class="w-20 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-white text-center">
@@ -285,22 +276,18 @@
                         <p class="text-zinc-400 text-sm">Total de Itens</p>
                         <p id="totalItems" class="text-3xl font-bold text-labelAccent">-</p>
                     </div>
-
                     <div class="bg-zinc-900 rounded-lg p-4 text-center">
                         <p class="text-zinc-400 text-sm">On Stream</p>
                         <p id="onStreamCount" class="text-3xl font-bold text-emerald-400">-</p>
                     </div>
-
                     <div class="bg-zinc-900 rounded-lg p-4 text-center">
                         <p class="text-zinc-400 text-sm">Off Stream</p>
                         <p id="offStreamCount" class="text-3xl font-bold text-amber-400">-</p>
                     </div>
-
                     <div class="bg-zinc-900 rounded-lg p-4 text-center">
                         <p class="text-zinc-400 text-sm">Taken Down</p>
                         <p id="takenDownCount" class="text-3xl font-bold text-red-400">-</p>
                     </div>
-
                     <div class="bg-zinc-900 rounded-lg p-4 text-center">
                         <p class="text-zinc-400 text-sm">Pode Lançar</p>
                         <p id="podeLancarCount" class="text-3xl font-bold text-purple-400">-</p>
@@ -312,9 +299,8 @@
                         <h3 class="text-lg font-semibold text-white mb-3">Por Formato</h3>
                         <div id="formatoStats" class="space-y-2"></div>
                     </div>
-
                     <div class="bg-zinc-900 rounded-lg p-4">
-                        <h3 class="text-lg font-semibold text-white mb-3">Top Prateleiras</h3>
+                        <h3 class="text-lg font-semibold text-white mb-3">Itens por Prateleira (clique para ver detalhes)</h3>
                         <div id="prateleiraStats" class="space-y-2"></div>
                     </div>
                 </div>
@@ -322,8 +308,22 @@
         </div>
     </div>
 
-    <script type="module" src="./js/app.js"></script>
+    <!-- MODAL para listar produtos de uma prateleira -->
+    <div id="modalPrateleira" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-labelCard border border-zinc-800 rounded-xl p-6 w-11/12 max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
+            <div class="flex justify-between items-center mb-4 border-b border-zinc-800 pb-3">
+                <h2 id="modalPrateleiraTitle" class="text-xl font-bold text-white">Produtos - Prateleira</h2>
+                <button id="closeModalBtn" class="text-zinc-400 hover:text-white transition-colors p-2 text-2xl leading-none">
+                    &times;
+                </button>
+            </div>
+            <div class="overflow-y-auto custom-scrollbar flex-1 pr-2">
+                <ul id="modalPrateleiraList" class="space-y-3"></ul>
+            </div>
+        </div>
+    </div>
 
+    <script type="module" src="./js/app.js"></script>
     <script>
         if ("serviceWorker" in navigator) {
             window.addEventListener("load", () => {

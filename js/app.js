@@ -1,4 +1,5 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+import { inicializarDashboard } from './dashboard.js'; // IMPORTAÇÃO DO NOVO ARQUIVO
 
 // Configuração Supabase
 const supabaseUrl = 'https://ulbqzvztwrqmaxbzsmmv.supabase.co';
@@ -169,7 +170,9 @@ async function carregarOpcoesGravadoras() {
 }
 
 // --- DASHBOARD ---
+// --- DASHBOARD ---
 async function carregarDashboard() {
+    // 1. Carrega os totais gerais (Isso já funciona bem porque 'count: exact' ignora o limite de 1000)
     const { count: total } = await supabase.from('catalogo').select('*', { count: 'exact', head: true });
     document.getElementById('totalItems').innerText = total || 0;
 
@@ -185,55 +188,40 @@ async function carregarDashboard() {
     const { count: podeLancar } = await supabase.from('catalogo').select('*', { count: 'exact', head: true }).eq('pode_lancar', true);
     document.getElementById('podeLancarCount').innerText = podeLancar || 0;
 
-    const { data: formatoData } = await supabase.from('catalogo').select('formato');
-    if (formatoData) {
-        const counts = {};
-        formatoData.forEach(item => {
-            const fmt = item.formato || 'Desconhecido';
-            counts[fmt] = (counts[fmt] || 0) + 1;
-        });
+    // 2. Busca TODAS as colunas necessárias em "lotes" para driblar o limite do Supabase
+    let todosOsDados = [];
+    let step = 1000;
+    let inicio = 0;
+    let temMaisDados = true;
 
-        const container = document.getElementById('formatoStats');
-        container.innerHTML = '';
-
-        Object.entries(counts)
-            .sort((a, b) => b[1] - a[1])
-            .forEach(([formato, count]) => {
-                const percent = total ? ((count / total) * 100).toFixed(1) : 0;
-                container.innerHTML += `
-                    <div class="flex justify-between items-center">
-                        <span class="text-zinc-300">${escapeHtml(formato)}</span>
-                        <span class="text-zinc-400">${count} (${percent}%)</span>
-                    </div>
-                    <div class="w-full bg-zinc-800 rounded-full h-2">
-                        <div class="bg-labelAccent h-2 rounded-full" style="width: ${percent}%"></div>
-                    </div>
-                `;
-            });
-    }
-
-    const { data: prateleiraData } = await supabase.from('catalogo').select('prateleira').not('prateleira', 'is', null);
-    if (prateleiraData) {
-        const counts = {};
-        prateleiraData.forEach(item => {
-            const shelf = item.prateleira;
-            if (shelf) counts[shelf] = (counts[shelf] || 0) + 1;
-        });
-
-        const container = document.getElementById('prateleiraStats');
-        container.innerHTML = '';
-
-        Object.entries(counts)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 5)
-            .forEach(([shelf, count]) => {
-                container.innerHTML += `<div class="flex justify-between"><span>Prateleira ${escapeHtml(shelf)}</span><span>${count} itens</span></div>`;
-            });
-
-        if (Object.keys(counts).length === 0) {
-            container.innerHTML = '<p class="text-zinc-500">Nenhuma prateleira definida</p>';
+    while (temMaisDados) {
+        const { data, error } = await supabase
+            .from('catalogo')
+            .select('titulo, artista, formato, prateleira')
+            .range(inicio, inicio + step - 1);
+        
+        if (error) {
+            console.error("Erro ao carregar dados do dashboard", error);
+            break;
+        }
+        
+        if (data && data.length > 0) {
+            // Junta os dados novos com os que já foram baixados
+            todosOsDados = todosOsDados.concat(data);
+            inicio += step; // Prepara para buscar os próximos 1000
+            
+            // Se veio menos de 1000 itens neste lote, significa que chegamos ao fim do banco
+            if (data.length < step) {
+                temMaisDados = false;
+            }
+        } else {
+            // Se não veio nada, paramos o loop
+            temMaisDados = false;
         }
     }
+    
+    // Agora sim, envia TODOS os registros para o dashboard.js fazer a contagem correta!
+    inicializarDashboard(todosOsDados);
 }
 
 // --- NAVEGAÇÃO ENTRE ABAS ---
@@ -461,7 +449,7 @@ function renderTable(data) {
                     alert("Erro ao excluir: " + error.message);
                 } else {
                     buscarProdutos(true);
-                    carregarDashboard();
+                    carregarDashboard(); // Atualiza painel ao excluir
                 }
             }
         });
@@ -676,6 +664,7 @@ async function salvarProduto() {
 
     buscarProdutos(false);
     carregarOpcoesGravadoras();
+    carregarDashboard(); // Atualiza painel de dashboard com a inserção
 }
 
 // --- EXPORTAÇÕES ---
