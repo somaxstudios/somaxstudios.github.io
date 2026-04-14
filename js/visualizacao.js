@@ -176,7 +176,8 @@ function preencherFiltrosDinamicos() {
 
     if (el.filtroGravadora) {
         const gravadoras = [...new Set(dadosGlobais.map(i => i.gravadora).filter(Boolean))].sort();
-        el.filtroGravadora.innerHTML = '<option value="">Gravadora (Todas)</option>';
+        // ALTERAÇÃO 1: Label do filtro dinâmico
+        el.filtroGravadora.innerHTML = '<option value="">Gravadora (Label) (Todas)</option>';
         gravadoras.forEach(g => el.filtroGravadora.add(new Option(g, g)));
     }
 }
@@ -428,8 +429,7 @@ function renderTabela(itens) {
                     </div>
 
                     <div class="mobile-card-row">
-                        <span class="mobile-card-label">Gravadora</span>
-                        <span class="mobile-card-value">${escapeHtml(item.gravadora || '-')}</span>
+                        <span class="mobile-card-label">Gravadora (Label)</span> <span class="mobile-card-value">${escapeHtml(item.gravadora || '-')}</span>
                     </div>
 
                     <div class="mobile-card-row">
@@ -453,7 +453,8 @@ function exportarCSV() {
     const confirmado = confirm('Atenção: esta exportação contém dados internos da Somax Studios. Confirmar exportação?');
     if (!confirmado) return;
 
-    let csv = 'Titulo,Artista,Gravadora,Prateleira,Status Stream\n';
+    // ALTERAÇÃO 3: Cabeçalho do CSV
+    let csv = 'Titulo,Artista,Gravadora (Label),Prateleira,Status Stream\n';
     const linhas = document.querySelectorAll('#tableBody tr');
 
     linhas.forEach(tr => {
