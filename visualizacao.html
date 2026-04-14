@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Gerenciamento de Catálogo SOMAX</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: '#6366f1',
+                        darkBg: '#09090b',
+                        cardBg: '#18181b',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #09090b; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6366f1; }
+
+        .tab-active {
+            background-color: #6366f1;
+            color: white;
+            border-color: #6366f1;
+        }
+
+        .tab-inactive {
+            background-color: transparent;
+            color: #a1a1aa;
+            border-color: #27272a;
+        }
+
+        .tab-inactive:hover {
+            color: #e4e4e7;
+            border-color: #3f3f46;
+        }
+
+        #mainTable {
+            width: 100%;
+            table-layout: fixed;
+        }
+
+        #mainTable th,
+        #mainTable td {
+            white-space: normal;
+            word-break: break-word;
+            vertical-align: top;
+        }
+
+        .mobile-card {
+            padding: 1rem;
+            background: #18181b;
+        }
+
+        .mobile-card-title {
+            font-size: 0.95rem;
+            line-height: 1.3rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 0.75rem;
+        }
+
+        .mobile-card-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+        }
+
+        .mobile-card-row {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        .mobile-card-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #71717a;
+            font-weight: 600;
+        }
+
+        .mobile-card-value {
+            font-size: 0.92rem;
+            color: #d4d4d8;
+            line-height: 1.3rem;
+            word-break: break-word;
+        }
+    </style>
+</head>
+<body class="bg-darkBg text-zinc-300 font-sans antialiased min-h-screen selection:bg-brand selection:text-white">
+
+    <div id="avisoAcessoModal" class="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 px-4">
+        <div class="bg-cardBg border border-zinc-800 rounded-2xl shadow-2xl max-w-2xl w-full p-6">
+            <div class="flex items-start gap-4">
+                <div class="shrink-0 w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 text-xl">
+                    ⚠
+                </div>
+
+                <div class="flex-1">
+                    <h2 class="text-xl font-bold text-white mb-2 uppercase tracking-tight">
+                        Aviso de confidencialidade
+                    </h2>
+
+                    <p class="text-sm text-zinc-300 leading-relaxed mb-3">
+                        Este sistema é de uso interno da <span class="text-white font-semibold">Somax Studios</span> e destina-se exclusivamente à visualização e gestão interna de produtos do catálogo.
+                    </p>
+
+                    <p class="text-sm text-zinc-400 leading-relaxed mb-3">
+                        É proibido compartilhar este link, dados, exportações, relatórios ou qualquer informação aqui exibida com terceiros sem autorização expressa.
+                    </p>
+
+                    <p class="text-sm text-zinc-400 leading-relaxed mb-5">
+                        Somente administradores e desenvolvedores autorizados pela Somax podem conceder acesso a esta página e aos seus conteúdos.
+                    </p>
+
+                    <div class="flex flex-col sm:flex-row gap-3 sm:justify-end">
+                        <button id="btnConfirmarAviso"
+                            class="px-5 py-2.5 bg-brand hover:bg-indigo-500 text-white rounded-lg font-medium transition">
+                            Entendi e continuar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="bg-cardBg border-b border-zinc-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 gap-4">
+                <div class="flex flex-col leading-tight">
+                    <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white uppercase">
+                        Gerenciamento de Catálogo SOMAX
+                    </h1>
+                    <span class="text-xs text-zinc-500">
+                        Sistema interno destinado somente à visualização de produtos
+                    </span>
+                </div>
+
+                <div class="text-right hidden sm:block">
+                    <span class="text-xs text-zinc-500">
+                        © 2026 Somax Studios — Uso interno restrito
+                    </span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-4 space-y-6">
+
+        <div class="flex space-x-2 border-b border-zinc-800 pb-3">
+            <button id="btnTabDashboard" class="tab-active px-5 py-2 text-sm font-medium rounded-md border transition-all">
+                📊 Visão Geral (Dashboard)
+            </button>
+            <button id="btnTabDados" class="tab-inactive px-5 py-2 text-sm font-medium rounded-md border transition-all">
+                📋 Base de Dados do Catálogo
+            </button>
+        </div>
+
+        <div id="loader" class="py-20 text-center text-zinc-500 flex flex-col items-center gap-3">
+            <svg class="animate-spin h-8 w-8 text-brand" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p>A sincronizar com o catálogo Somax...</p>
+        </div>
+
+        <div id="viewDashboard" class="hidden space-y-6">
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-cardBg p-5 rounded-xl border border-zinc-800 shadow-sm">
+                    <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Total de Obras</p>
+                    <h2 id="kpiTotal" class="text-3xl font-bold text-white mt-1">-</h2>
+                </div>
+
+                <div class="bg-cardBg p-5 rounded-xl border border-zinc-800 shadow-sm">
+                    <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wider">On Stream</p>
+                    <h2 id="kpiOnStream" class="text-3xl font-bold text-emerald-400 mt-1">-</h2>
+                </div>
+
+                <div class="bg-cardBg p-5 rounded-xl border border-zinc-800 shadow-sm">
+                    <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Off Stream</p>
+                    <h2 id="kpiOffStream" class="text-3xl font-bold text-rose-400 mt-1">-</h2>
+                </div>
+
+                <div class="bg-cardBg p-5 rounded-xl border border-zinc-800 shadow-sm">
+                    <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Prateleiras Físicas</p>
+                    <h2 id="kpiPrateleiras" class="text-3xl font-bold text-brand mt-1">-</h2>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <div class="bg-cardBg p-4 rounded-xl border border-zinc-800 shadow-sm flex flex-col h-[320px]">
+                    <h3 class="text-sm font-semibold text-white mb-2">Status de Stream</h3>
+                    <div class="flex-1 relative">
+                        <canvas id="chartStream"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-cardBg p-4 rounded-xl border border-zinc-800 shadow-sm flex flex-col h-[320px]">
+                    <h3 class="text-sm font-semibold text-white mb-2">Formato</h3>
+                    <div class="flex-1 relative">
+                        <canvas id="chartFormato"></canvas>
+                    </div>
+                    <p id="formatoEmptyMsg" class="text-xs text-center text-zinc-500 mt-2 hidden">
+                        Dados de formato não disponíveis
+                    </p>
+                </div>
+
+                <div class="bg-cardBg p-4 rounded-xl border border-zinc-800 shadow-sm flex flex-col h-[320px]">
+                    <h3 class="text-sm font-semibold text-white mb-2">📦 Itens por Prateleira</h3>
+                    <div id="prateleirasList" class="flex-1 overflow-y-auto space-y-2 pr-1">
+                        <div class="text-center text-zinc-500 text-sm py-4">A carregar...</div>
+                    </div>
+                    <p class="text-xs text-zinc-500 mt-2 text-center">
+                        🔍 Clique numa prateleira para ver os itens
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div id="viewDados" class="hidden space-y-4">
+
+            <div class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 sm:p-4">
+                <div class="flex items-start gap-3">
+                    <div class="text-amber-400 text-lg">🔒</div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-amber-300 uppercase tracking-wide">
+                            Aviso sobre exportação
+                        </h3>
+                        <p class="text-sm text-zinc-300 mt-1 leading-relaxed">
+                            A exportação do catálogo gera arquivos com <span class="font-semibold text-white">dados internos e confidenciais</span>.
+                            O compartilhamento com terceiros, parceiros externos ou pessoas sem autorização formal da Somax Studios não é permitido.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-cardBg border border-zinc-800 rounded-xl p-3 sm:p-4">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-3">
+                    <button id="toggleFiltersBtn" class="w-full md:w-auto flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-lg text-sm transition border border-zinc-700">
+                        <span id="filterIcon">🔽</span> Mostrar Filtros
+                    </button>
+
+                    <div class="flex gap-2 w-full md:w-auto">
+                        <button id="btnExportarCSV" class="flex-1 md:flex-none text-sm px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 rounded-lg transition">
+                            Exportar CSV
+                        </button>
+                        <button id="btnExportarPDF" class="flex-1 md:flex-none text-sm px-4 py-2 bg-brand hover:bg-indigo-500 text-white border border-brand rounded-lg transition shadow-lg shadow-brand/20">
+                            Exportar PDF
+                        </button>
+                    </div>
+                </div>
+
+                <div id="filterContent" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-4 border-t border-zinc-800 mt-3">
+                    <input type="text" id="filtroTexto" placeholder="Pesquisar Título ou Artista..." class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand outline-none">
+
+                    <select id="filtroStream" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand outline-none">
+                        <option value="">Status Stream (Todos)</option>
+                        <option value="ON">ON</option>
+                        <option value="OFF">OFF</option>
+                    </select>
+
+                    <select id="filtroPrateleira" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand outline-none">
+                        <option value="">Prateleira (Todas)</option>
+                    </select>
+
+                    <select id="filtroGravadora" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand outline-none">
+                        <option value="">Gravadora (Todas)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="bg-cardBg border border-zinc-800 rounded-xl shadow-sm overflow-hidden">
+                
+                <div class="hidden md:block">
+                    <table class="w-full text-left border-collapse" id="mainTable">
+                        <thead class="bg-zinc-900 text-zinc-400 text-xs uppercase tracking-wider font-semibold border-b border-zinc-800">
+                            <tr>
+                                <th class="px-4 py-3 w-[30%]">Título da Obra</th>
+                                <th class="px-4 py-3 w-[24%]">Artista</th>
+                                <th class="px-4 py-3 w-[20%]">Gravadora</th>
+                                <th class="px-4 py-3 w-[14%]">Prateleira</th>
+                                <th class="px-4 py-3 w-[12%] text-center">Status Stream</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody" class="text-sm divide-y divide-zinc-800/50"></tbody>
+                    </table>
+                </div>
+
+                <div id="mobileCards" class="md:hidden divide-y divide-zinc-800/50"></div>
+
+                <div id="noResults" class="hidden p-6 text-center text-zinc-500 text-sm">
+                    Nenhum registo encontrado com estes filtros.
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="./js/visualizacao.js"></script>
+</body>
+</html>
