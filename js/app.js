@@ -1,5 +1,5 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-import { inicializarDashboard } from './dashboard.js'; // IMPORTAÇÃO DO NOVO ARQUIVO
+import { inicializarDashboard } from './dashboard.js';
 
 // Configuração Supabase
 const supabaseUrl = 'https://ulbqzvztwrqmaxbzsmmv.supabase.co';
@@ -170,9 +170,7 @@ async function carregarOpcoesGravadoras() {
 }
 
 // --- DASHBOARD ---
-// --- DASHBOARD ---
 async function carregarDashboard() {
-    // 1. Carrega os totais gerais (Isso já funciona bem porque 'count: exact' ignora o limite de 1000)
     const { count: total } = await supabase.from('catalogo').select('*', { count: 'exact', head: true });
     document.getElementById('totalItems').innerText = total || 0;
 
@@ -188,7 +186,6 @@ async function carregarDashboard() {
     const { count: podeLancar } = await supabase.from('catalogo').select('*', { count: 'exact', head: true }).eq('pode_lancar', true);
     document.getElementById('podeLancarCount').innerText = podeLancar || 0;
 
-    // 2. Busca TODAS as colunas necessárias em "lotes" para driblar o limite do Supabase
     let todosOsDados = [];
     let step = 1000;
     let inicio = 0;
@@ -206,21 +203,14 @@ async function carregarDashboard() {
         }
         
         if (data && data.length > 0) {
-            // Junta os dados novos com os que já foram baixados
             todosOsDados = todosOsDados.concat(data);
-            inicio += step; // Prepara para buscar os próximos 1000
-            
-            // Se veio menos de 1000 itens neste lote, significa que chegamos ao fim do banco
-            if (data.length < step) {
-                temMaisDados = false;
-            }
+            inicio += step;
+            if (data.length < step) temMaisDados = false;
         } else {
-            // Se não veio nada, paramos o loop
             temMaisDados = false;
         }
     }
     
-    // Agora sim, envia TODOS os registros para o dashboard.js fazer a contagem correta!
     inicializarDashboard(todosOsDados);
 }
 
@@ -241,12 +231,13 @@ function mostrarDashboard() {
     carregarDashboard();
 }
 
-// --- TOTAL DE REGISTOS COM FILTROS ---
+// --- TOTAL DE REGISTOS COM FILTROS (modificado para usar texto_busca) ---
 async function fetchTotalCount() {
     let query = supabase.from('catalogo').select('*', { count: 'exact', head: true });
 
     if (currentSearch) {
-        query = query.or(`artista.ilike.%${currentSearch}%,titulo.ilike.%${currentSearch}%,gravadora.ilike.%${currentSearch}%`);
+        const termoLimpo = currentSearch.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        query = query.ilike('texto_busca', `%${termoLimpo}%`);
     }
 
     if (currentFormato) query = query.eq('formato', currentFormato);
@@ -259,7 +250,7 @@ async function fetchTotalCount() {
     return count || 0;
 }
 
-// --- BUSCAR PRODUTOS ---
+// --- BUSCAR PRODUTOS (modificado para usar texto_busca) ---
 async function buscarProdutos(resetPage = true) {
     if (resetPage) currentPage = 1;
 
@@ -298,7 +289,8 @@ async function buscarProdutos(resetPage = true) {
     let query = supabase.from('catalogo').select('*');
 
     if (currentSearch) {
-        query = query.or(`artista.ilike.%${currentSearch}%,titulo.ilike.%${currentSearch}%,gravadora.ilike.%${currentSearch}%`);
+        const termoLimpo = currentSearch.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        query = query.ilike('texto_busca', `%${termoLimpo}%`);
     }
 
     if (currentFormato) query = query.eq('formato', currentFormato);
@@ -344,7 +336,7 @@ async function buscarProdutos(resetPage = true) {
     renderTable(data || []);
 }
 
-// --- RENDERIZAÇÃO DA TABELA ---
+// --- RENDERIZAÇÃO DA TABELA (sem alterações) ---
 function renderTable(data) {
     tableBody.innerHTML = '';
 
@@ -370,75 +362,74 @@ function renderTable(data) {
                 <span class="editable-field" data-field="titulo" data-id="${item.id}" data-value="${escapeAttr(item.titulo || '')}">
                     <span class="titulo-display text-white">${escapeHtml(item.titulo || '')}</span>
                 </span>
-            </td>
+             </td>
 
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Artista</span>
                 <span class="editable-field" data-field="artista" data-id="${item.id}" data-value="${escapeAttr(item.artista || '')}">
                     <span class="artista-display text-zinc-300">${escapeHtml(item.artista || '')}</span>
                 </span>
-            </td>
+             </td>
 
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Gravadora / Label</span>
                 <span class="editable-field" data-field="gravadora" data-id="${item.id}" data-value="${escapeAttr(item.gravadora || '')}">
                     <span class="gravadora-display text-zinc-400">${escapeHtml(gravadoraLabel)}</span>
                 </span>
-            </td>
+             </td>
 
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Prateleira</span>
                 <span class="editable-field" data-field="prateleira" data-id="${item.id}" data-value="${escapeAttr(item.prateleira || '')}">
                     <span class="prateleira-display bg-zinc-800 px-2 py-1 rounded text-xs text-zinc-300 border border-zinc-700">${escapeHtml(item.prateleira || '-')}</span>
                 </span>
-            </td>
+             </td>
 
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Formato</span>
                 <span class="editable-field" data-field="formato" data-id="${item.id}" data-value="${escapeAttr(item.formato || '')}">
                     <span class="formato-display bg-zinc-800 px-2 py-1 rounded text-xs text-zinc-300 border border-zinc-700">${escapeHtml(item.formato || '-')}</span>
                 </span>
-            </td>
+             </td>
 
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Nº do Tape</span>
                 <span class="editable-field" data-field="numero" data-id="${item.id}" data-value="${escapeAttr(item.numero || '')}">
                     <span class="numero-display bg-zinc-800 px-2 py-1 rounded text-xs text-zinc-300 border border-zinc-700">${escapeHtml(item.numero || '-')}</span>
                 </span>
-            </td>
+             </td>
 
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Stream Status</span>
                 <span class="editable-field inline-block" data-field="stream_status" data-id="${item.id}" data-value="${escapeAttr(item.stream_status ?? '')}">
                     <span class="stream-status-display">${badgeStreamStatus(item.stream_status ?? null)}</span>
                 </span>
-            </td>
+             </td>
 
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Taken Down</span>
                 <span class="editable-field inline-block" data-field="taken_down" data-id="${item.id}" data-value="${item.taken_down === true ? 'true' : 'false'}">
                     <span class="taken-down-display">${badgeTakenDown(item.taken_down === true)}</span>
                 </span>
-            </td>
+             </td>
 
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Pode Lançar</span>
                 <span class="editable-field inline-block" data-field="pode_lancar" data-id="${item.id}" data-value="${item.pode_lancar === true ? 'true' : item.pode_lancar === false ? 'false' : ''}">
                     <span class="pode-lancar-display">${badgePodeLancar(item.pode_lancar)}</span>
                 </span>
-            </td>
+             </td>
 
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Ações</span>
                 <button class="delete-btn bg-red-800/40 hover:bg-red-700 text-white text-xs px-3 py-1 rounded transition" data-id="${item.id}">
                     🗑️ Excluir
                 </button>
-            </td>
+             </td>
         `;
 
         tableBody.appendChild(tr);
 
-        // Evento de exclusão
         tr.querySelector('.delete-btn')?.addEventListener('click', async (e) => {
             e.stopPropagation();
             const id = e.currentTarget.dataset.id;
@@ -449,7 +440,7 @@ function renderTable(data) {
                     alert("Erro ao excluir: " + error.message);
                 } else {
                     buscarProdutos(true);
-                    carregarDashboard(); // Atualiza painel ao excluir
+                    carregarDashboard();
                 }
             }
         });
@@ -463,7 +454,7 @@ function renderTable(data) {
     });
 }
 
-// --- EDIÇÃO INLINE ---
+// --- EDIÇÃO INLINE (sem alterações) ---
 function iniciarEdicao(elemento) {
     if (!elemento || elemento.dataset.editando === 'true') return;
 
@@ -609,15 +600,15 @@ function iniciarEdicao(elemento) {
     }
 }
 
-// --- SALVAR NOVO PRODUTO ---
+// --- SALVAR NOVO PRODUTO (modificado: valores padrão "Sem identificação", sem validação obrigatória) ---
+// --- SALVAR NOVO PRODUTO (modificado: valores padrão "Sem identificação", sem texto_busca) ---
 async function salvarProduto() {
-    const titulo = document.getElementById('addTitulo').value.trim();
-    const artista = document.getElementById('addArtista').value.trim();
+    const tituloInput = document.getElementById('addTitulo').value.trim();
+    const artistaInput = document.getElementById('addArtista').value.trim();
 
-    if (!titulo || !artista) {
-        alert("Título e Artista são obrigatórios!");
-        return;
-    }
+    // Se estiver vazio, aplica "Sem identificação"
+    const titulo = tituloInput !== '' ? tituloInput : "Sem identificação";
+    const artista = artistaInput !== '' ? artistaInput : "Sem identificação";
 
     const btn = document.getElementById('btnSalvar');
     btn.innerText = "A guardar...";
@@ -628,10 +619,13 @@ async function salvarProduto() {
     else if (podeLancarVal === 'true') podeLancarVal = true;
     else podeLancarVal = false;
 
+    const gravadora = document.getElementById('addGravadora').value || null;
+
+    // REMOVIDA a chave 'texto_busca'. O banco de dados vai gerar isso automaticamente!
     const novoProduto = {
         titulo,
         artista,
-        gravadora: document.getElementById('addGravadora').value || null,
+        gravadora,
         prateleira: document.getElementById('addPrateleira').value || null,
         formato: document.getElementById('addFormato').value || null,
         numero: document.getElementById('addNumero').value || null,
@@ -647,7 +641,7 @@ async function salvarProduto() {
 
     if (error) {
         console.error('Erro ao inserir produto:', error);
-        alert("Erro ao registar.");
+        alert("Erro ao registar. Veja o console.");
         return;
     }
 
@@ -664,14 +658,17 @@ async function salvarProduto() {
 
     buscarProdutos(false);
     carregarOpcoesGravadoras();
-    carregarDashboard(); // Atualiza painel de dashboard com a inserção
+    carregarDashboard();
 }
 
-// --- EXPORTAÇÕES ---
+// --- EXPORTAÇÕES (sem alterações) ---
 async function exportarCSV() {
     let query = supabase.from('catalogo').select('*');
 
-    if (currentSearch) query = query.or(`artista.ilike.%${currentSearch}%,titulo.ilike.%${currentSearch}%,gravadora.ilike.%${currentSearch}%`);
+    if (currentSearch) {
+        const termoLimpo = currentSearch.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        query = query.ilike('texto_busca', `%${termoLimpo}%`);
+    }
     if (currentFormato) query = query.eq('formato', currentFormato);
     if (currentPrateleira) query = query.eq('prateleira', currentPrateleira);
     if (currentStream) query = query.eq('stream_status', currentStream);
@@ -730,7 +727,10 @@ async function exportarPDF() {
 
     let query = supabase.from('catalogo').select('*');
 
-    if (currentSearch) query = query.or(`artista.ilike.%${currentSearch}%,titulo.ilike.%${currentSearch}%,gravadora.ilike.%${currentSearch}%`);
+    if (currentSearch) {
+        const termoLimpo = currentSearch.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        query = query.ilike('texto_busca', `%${termoLimpo}%`);
+    }
     if (currentFormato) query = query.eq('formato', currentFormato);
     if (currentPrateleira) query = query.eq('prateleira', currentPrateleira);
     if (currentStream) query = query.eq('stream_status', currentStream);
@@ -859,7 +859,7 @@ const filterContent = document.getElementById('filterContent');
 const toggleBtn = document.getElementById('toggleFiltersBtn');
 
 if (filterContent && toggleBtn) {
-    let filtersVisible = false; // começa fechado
+    let filtersVisible = false;
     toggleBtn.addEventListener('click', () => {
         if (filtersVisible) {
             filterContent.style.display = 'none';
@@ -870,7 +870,6 @@ if (filterContent && toggleBtn) {
         }
         filtersVisible = !filtersVisible;
     });
-    // Inicialmente escondido
     filterContent.style.display = 'none';
 }
 
