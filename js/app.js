@@ -611,7 +611,7 @@ async function salvarProduto() {
     const artista = artistaInput !== '' ? artistaInput : "Sem identificação";
 
     const btn = document.getElementById('btnSalvar');
-    btn.innerText = "A guardar...";
+    btn.innerText = "Aguarde enquanto salvamos o Produto...";
     btn.disabled = true;
 
     let podeLancarVal = document.getElementById('addPodeLancar').value;
