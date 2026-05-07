@@ -1,0 +1,16 @@
+[
+  {
+    "ativo": true,
+    "versao": "2.0",
+    "titulo": "🚀 Novidades no Catálogo Somax!",
+    "mensagem": "O sistema foi atualizado com ferramentas profissionais de gestão de arquivo físico e digital.",
+    "itens": [
+      "Leitor de Códigos de Barras integrado com a câmara do telefone.",
+      "Novo Mini-CMS: Edite a Ficha Técnica completa no momento da leitura.",
+      "Impressão de Etiquetas (9mm) aprimorada com identificação do Nº do Tape.",
+      "Impressão de Fichas de Arquivo com layout clássico de estúdio (PolyMusic).",
+      "Paginação inteligente e filtros avançados por prateleira."
+    ],
+    "rodape": "Aproveite as novas funcionalidades!"
+  }
+]

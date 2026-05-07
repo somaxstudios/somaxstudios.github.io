@@ -12,7 +12,7 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: #18181b; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
 
-        /* --- ESTILO DE IMPRESSÃO (FICHA TÉCNICA ESTÚDIO) --- */
+        /* Estilo de impressão elegante */
         @media print {
             body * { visibility: hidden; }
             #ficha-impressao, #ficha-impressao * { visibility: visible; }
@@ -34,6 +34,14 @@
         .header-studio { border-bottom: 2px solid black; margin-bottom: 20px; padding-bottom: 10px; }
         .label-studio { font-weight: bold; text-transform: uppercase; font-size: 10pt; color: #444; }
         .value-studio { font-size: 13pt; margin-bottom: 10px; border-bottom: 1px dotted #ccc; }
+        
+        /* Animação suave para o botão da câmara */
+        .pulse-soft { animation: pulseSoft 2s infinite; }
+        @keyframes pulseSoft {
+            0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.2); }
+            70% { box-shadow: 0 0 0 15px rgba(99, 102, 241, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+        }
     </style>
     <script>
         tailwind.config = {
@@ -43,20 +51,41 @@
 </head>
 <body class="bg-zinc-950 text-white min-h-screen p-4 flex flex-col items-center">
 
-<div class="w-full max-w-md no-print">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold">Leitor & Editor</h1>
-        <a href="index.html" class="text-zinc-400 hover:text-white">Voltar</a>
+<div class="w-full max-w-md no-print relative min-h-[90vh]">
+    
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-xl font-bold tracking-wide">Scanner<span class="text-labelAccent">.</span>Somax</h1>
+        <a href="index.html" class="flex items-center gap-2 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 text-xs px-4 py-2 rounded-full transition-colors shadow-lg">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Voltar
+        </a>
     </div>
 
-    <button id="btnIniciar" class="w-full mb-4 bg-labelAccent hover:bg-indigo-600 text-white font-medium py-3 px-4 rounded-xl transition-colors shadow-lg">
-        📸 Iniciar Câmara para Escanear
-    </button>
+    <div id="erroCamara" class="hidden bg-red-900/50 border border-red-700 rounded-xl p-3 text-sm text-red-200 mb-4 text-center"></div>
 
-    <div id="reader" style="display: none;" class="bg-labelCard border border-zinc-800 rounded-xl p-4 shadow-xl mb-6"></div>
-    <div id="erroCamara" class="hidden bg-red-900/50 border border-red-700 rounded-xl p-3 text-sm text-red-200 mb-4"></div>
+    <div id="start-container" class="flex flex-col items-center justify-center py-12 absolute inset-0 mt-20">
+        <button id="btnIniciar" class="w-40 h-40 bg-zinc-900 border-2 border-dashed border-zinc-700 hover:border-labelAccent rounded-[2rem] flex flex-col items-center justify-center transition-all group shadow-2xl relative overflow-hidden pulse-soft">
+            <div class="absolute inset-0 bg-labelAccent/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <svg class="w-16 h-16 text-zinc-500 group-hover:text-labelAccent transition-colors mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span class="text-xs font-semibold tracking-widest text-zinc-500 group-hover:text-labelAccent uppercase">Tocar para Ler</span>
+        </button>
+        <p class="mt-8 text-center text-sm text-zinc-500 max-w-[250px] leading-relaxed">
+            Aponte a câmara para o código de barras na lombada do Tape para abrir a ficha técnica.
+        </p>
+    </div>
 
-    <div id="resultado" class="hidden bg-labelCard border border-zinc-800 rounded-xl p-6 shadow-xl mb-6">
+    <div id="reader-container" class="hidden">
+        <div class="flex justify-between items-center mb-4">
+            <span class="text-sm text-zinc-400">A focar código...</span>
+            <button onclick="reiniciarLeitor()" class="text-xs bg-zinc-800 px-3 py-1 rounded-full text-zinc-300">Cancelar</button>
+        </div>
+        <div id="reader" class="bg-labelCard border border-zinc-800 rounded-2xl p-2 shadow-2xl overflow-hidden"></div>
+    </div>
+
+    <div id="resultado" class="hidden bg-labelCard border border-zinc-800 rounded-xl p-6 shadow-xl mb-6 mt-4 relative z-10">
         <div class="flex justify-between items-start border-b border-zinc-800 pb-4 mb-4">
             <div>
                 <span class="text-xs font-mono text-labelAccent bg-labelAccent/10 px-2 py-1 rounded" id="res-id">ID: 000</span>
@@ -64,7 +93,7 @@
                 <p class="text-zinc-400 text-sm" id="res-artista">...</p>
                 <p class="text-zinc-500 text-xs mt-1" id="res-local">Local: - | Tape: -</p>
             </div>
-            <button onclick="prepararImpressao()" class="bg-zinc-800 hover:bg-zinc-700 p-2 rounded-lg" title="Imprimir Ficha Técnica">
+            <button onclick="prepararImpressao()" class="bg-zinc-800 hover:bg-zinc-700 p-3 rounded-xl transition-colors" title="Imprimir Ficha Técnica">
                 🖨️
             </button>
         </div>
@@ -77,40 +106,42 @@
         <form id="formFicha" class="space-y-3">
             <div>
                 <label class="block text-xs text-zinc-500 mb-1">Intérprete</label>
-                <input type="text" id="in_interprete" class="ficha-input w-full bg-transparent border-b border-zinc-800 focus:border-labelAccent py-1 text-sm disabled:text-white disabled:border-transparent" disabled>
+                <input type="text" id="in_interprete" class="ficha-input w-full bg-transparent border-b border-zinc-800 focus:border-labelAccent py-1 text-sm disabled:text-white disabled:border-transparent outline-none" disabled>
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block text-xs text-zinc-500 mb-1">Gênero</label>
-                    <input type="text" id="in_genero" class="ficha-input w-full bg-transparent border-b border-zinc-800 py-1 text-sm disabled:text-white" disabled>
+                    <input type="text" id="in_genero" class="ficha-input w-full bg-transparent border-b border-zinc-800 py-1 text-sm disabled:text-white disabled:border-transparent outline-none" disabled>
                 </div>
                 <div>
                     <label class="block text-xs text-zinc-500 mb-1">Tipo</label>
-                    <select id="in_tipo" class="ficha-input w-full bg-transparent border-b border-zinc-800 py-1 text-sm disabled:text-white appearance-none" disabled>
+                    <select id="in_tipo" class="ficha-input w-full bg-transparent border-b border-zinc-800 py-1 text-sm disabled:text-white disabled:border-transparent appearance-none outline-none" disabled>
                         <option value="" class="bg-zinc-900">Selecione...</option>
-                        <option value="Artístico">Artístico</option>
-                        <option value="Licenciado">Licenciado</option>
-                        <option value="Instrumental">Instrumental</option>
-                        <option value="Internacional">Internacional</option>
+                        <option value="Artístico" class="bg-zinc-900">Artístico</option>
+                        <option value="Licenciado" class="bg-zinc-900">Licenciado</option>
+                        <option value="Instrumental" class="bg-zinc-900">Instrumental</option>
+                        <option value="Internacional" class="bg-zinc-900">Internacional</option>
                     </select>
                 </div>
             </div>
             <div>
                 <label class="block text-xs text-zinc-500 mb-1">Compositores</label>
-                <input type="text" id="in_compositores" class="ficha-input w-full bg-transparent border-b border-zinc-800 py-1 text-sm disabled:text-white" disabled>
+                <input type="text" id="in_compositores" class="ficha-input w-full bg-transparent border-b border-zinc-800 py-1 text-sm disabled:text-white disabled:border-transparent outline-none" disabled>
             </div>
             <div>
                 <label class="block text-xs text-zinc-500 mb-1">Músicos</label>
-                <input type="text" id="in_musicos" class="ficha-input w-full bg-transparent border-b border-zinc-800 py-1 text-sm disabled:text-white" disabled>
+                <input type="text" id="in_musicos" class="ficha-input w-full bg-transparent border-b border-zinc-800 py-1 text-sm disabled:text-white disabled:border-transparent outline-none" disabled>
             </div>
             <div>
                 <label class="block text-xs text-zinc-500 mb-1">Faixas</label>
-                <textarea id="in_faixas" rows="3" class="ficha-input custom-scrollbar w-full bg-transparent border border-zinc-800 rounded p-2 text-sm disabled:text-white disabled:border-transparent" disabled></textarea>
+                <textarea id="in_faixas" rows="3" class="ficha-input custom-scrollbar w-full bg-transparent border border-zinc-800 rounded p-2 text-sm disabled:text-white disabled:border-transparent outline-none disabled:resize-none" disabled></textarea>
             </div>
-            <button type="submit" id="btnSalvar" class="hidden w-full mt-4 bg-emerald-600 py-2 rounded">💾 Guardar</button>
+            <button type="submit" id="btnSalvar" class="hidden w-full mt-4 bg-emerald-600 py-3 font-medium rounded-xl hover:bg-emerald-500 transition-colors">💾 Guardar Ficha</button>
         </form>
 
-        <button id="btnReiniciar" class="w-full mt-6 border border-zinc-700 py-2 rounded">Escanear Outra Fita</button>
+        <button id="btnReiniciar" class="w-full mt-6 border border-zinc-800 hover:bg-zinc-800 text-white font-medium py-3 px-4 rounded-xl transition-colors">
+            Escanear Outra Fita
+        </button>
     </div>
 </div>
 
@@ -166,7 +197,7 @@
             <div id="prt-faixas" style="white-space: pre-wrap; font-family: monospace; font-size: 11pt; line-height: 1.6;"></div>
         </div>
 
-        <div style="margin-top: 50px; display: flex; justify-content: space-between; font-size: 9pt; border-top: 1px solid #000; pt-10">
+        <div style="margin-top: 50px; display: flex; justify-content: space-between; font-size: 9pt; border-top: 1px solid #000; padding-top: 10px;">
             <div>Gerado em: <span id="prt-data">--/--/----</span></div>
             <div style="text-align: right; font-style: italic;">Documento Oficial de Controle Interno - Polymusic Studios</div>
         </div>
@@ -185,25 +216,64 @@
         let isEditing = false;
         let dadosCarregados = { catalogo: {}, ficha: {} };
 
-        // ... (Funções iniciarLeitor, onScanFailure, reiniciarLeitor, toggleEditMode, salvarFicha iguais ao anterior) ...
+        const startContainer = document.getElementById('start-container');
+        const readerContainer = document.getElementById('reader-container');
+        const resultadoDiv = document.getElementById('resultado');
+        const erroDiv = document.getElementById('erroCamara');
+
+        function mostrarErro(msg) {
+            erroDiv.innerText = msg;
+            erroDiv.classList.remove('hidden');
+            setTimeout(() => erroDiv.classList.add('hidden'), 5000);
+        }
+
+        async function iniciarLeitor() {
+            if (scanning) return;
+            
+            // Troca de ecrãs
+            startContainer.classList.add('hidden');
+            startContainer.classList.remove('flex');
+            resultadoDiv.classList.add('hidden');
+            erroDiv.classList.add('hidden');
+            readerContainer.classList.remove('hidden');
+
+            html5QrCode = new Html5Qrcode("reader");
+            
+            try {
+                scanning = true;
+                await html5QrCode.start(
+                    { facingMode: "environment" },
+                    { fps: 10, qrbox: { width: 250, height: 100 }, formatsToSupport: [ Html5QrcodeSupportedFormats.CODE_128 ] },
+                    onScanSuccess,
+                    () => {} // Ignora falhas de frame
+                );
+            } catch (err) {
+                mostrarErro("Erro ao aceder à câmara. Verifique as permissões.");
+                reiniciarLeitor();
+            }
+        }
 
         async function onScanSuccess(decodedText) {
             if (!scanning) return;
             if (html5QrCode) { await html5QrCode.stop().catch(e => console.warn(e)); scanning = false; }
-            document.getElementById('reader').style.display = 'none';
-            document.getElementById('resultado').classList.remove('hidden');
+            
+            readerContainer.classList.add('hidden');
+            resultadoDiv.classList.remove('hidden');
 
             idAtual = parseInt(decodedText, 10);
             
             const resCatalogo = await supabaseClient.from('catalogo').select('*').eq('id', idAtual).single();
-            if (resCatalogo.error) return alert("Erro ao buscar catálogo.");
+            if (resCatalogo.error) {
+                document.getElementById('res-titulo').innerText = "Não encontrado";
+                return;
+            }
             dadosCarregados.catalogo = resCatalogo.data;
 
             const resFicha = await supabaseClient.from('ficha_tecnica').select('*').eq('catalogo_id', idAtual).single();
             dadosCarregados.ficha = resFicha.data || {};
 
-            // Preencher UI do Ecrã
             atualizarInterfaceEcra();
+            if(isEditing) toggleEditMode(); // Volta a bloquear os campos
         }
 
         function atualizarInterfaceEcra() {
@@ -223,12 +293,10 @@
             document.getElementById('in_faixas').value = ficha.faixas || '';
         }
 
-        // --- FUNÇÃO DE IMPRESSÃO ELEGANTE ---
         window.prepararImpressao = function() {
             const prod = dadosCarregados.catalogo;
             const ficha = dadosCarregados.ficha;
 
-            // Mapeia os dados para a ficha de papel
             document.getElementById('prt-titulo').innerText = prod.titulo.toUpperCase();
             document.getElementById('prt-artista').innerText = (ficha.interprete || prod.artista).toUpperCase();
             document.getElementById('prt-genero').innerText = ficha.genero || 'NÃO ESPECIFICADO';
@@ -244,32 +312,26 @@
             window.print();
         };
 
-        // ... (Listeners e resto do código idênticos ao anterior) ...
-        // [Nota: Certifique-se de incluir as funções de iniciarLeitor e listeners do código anterior]
-        
-        // REPETINDO LISTENERS PARA GARANTIA
-        document.getElementById('btnIniciar').addEventListener('click', () => {
-            if (scanning) return;
-            document.getElementById('btnIniciar').style.display = 'none';
-            document.getElementById('reader').style.display = 'block';
-            html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 100 } }, onScanSuccess, onScanFailure);
-        });
-        document.getElementById('btnReiniciar').addEventListener('click', () => location.reload());
-        document.getElementById('btnToggleEdit').addEventListener('click', toggleEditMode);
-        document.getElementById('formFicha').addEventListener('submit', salvarFicha);
-
         function toggleEditMode() {
             isEditing = !isEditing;
             const inputs = document.querySelectorAll('.ficha-input');
             const btnSalvar = document.getElementById('btnSalvar');
-            inputs.forEach(i => i.disabled = !isEditing);
+            
+            inputs.forEach(input => {
+                input.disabled = !isEditing;
+                if(isEditing) input.classList.add('bg-zinc-900', 'px-2', 'rounded');
+                else input.classList.remove('bg-zinc-900', 'px-2', 'rounded');
+            });
+            
             btnSalvar.classList.toggle('hidden', !isEditing);
             document.getElementById('btnToggleEdit').innerText = isEditing ? "❌ Cancelar" : "✏️ Editar";
         }
 
         async function salvarFicha(e) {
             e.preventDefault();
+            const btnSalvar = document.getElementById('btnSalvar');
+            btnSalvar.innerText = "A guardar...";
+            
             const dados = {
                 catalogo_id: idAtual,
                 interprete: document.getElementById('in_interprete').value,
@@ -279,15 +341,43 @@
                 tipo_produto: document.getElementById('in_tipo').value,
                 faixas: document.getElementById('in_faixas').value
             };
-            const { data, error } = await supabaseClient.from('ficha_tecnica').upsert(dados, { onConflict: 'catalogo_id' });
-            if (error) alert("Erro ao salvar.");
-            else { 
-                alert("Salvo com sucesso!"); 
+            const { error } = await supabaseClient.from('ficha_tecnica').upsert(dados, { onConflict: 'catalogo_id' });
+            
+            if (error) {
+                alert("Erro ao salvar.");
+                btnSalvar.innerText = "💾 Guardar Ficha";
+            } else { 
+                btnSalvar.innerText = "✅ Salvo!";
                 dadosCarregados.ficha = dados;
-                toggleEditMode(); 
+                setTimeout(() => {
+                    toggleEditMode();
+                    btnSalvar.innerText = "💾 Guardar Ficha";
+                }, 800);
             }
         }
-        function onScanFailure() {}
+
+        window.reiniciarLeitor = function() {
+            if (html5QrCode && scanning) {
+                html5QrCode.stop().catch(e => console.warn(e));
+                scanning = false;
+            }
+            idAtual = null;
+            if(isEditing) toggleEditMode();
+            
+            // Voltar ao estado "vazio" elegante
+            readerContainer.classList.add('hidden');
+            resultadoDiv.classList.add('hidden');
+            startContainer.classList.remove('hidden');
+            startContainer.classList.add('flex');
+            erroDiv.classList.add('hidden');
+        };
+
+        // Event Listeners
+        document.getElementById('btnIniciar').addEventListener('click', iniciarLeitor);
+        document.getElementById('btnReiniciar').addEventListener('click', reiniciarLeitor);
+        document.getElementById('btnToggleEdit').addEventListener('click', toggleEditMode);
+        document.getElementById('formFicha').addEventListener('submit', salvarFicha);
+
     })();
 </script>
 </body>

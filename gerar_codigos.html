@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerar Códigos de Barras - Somax</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #18181b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+        
+        .barcode-card {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            height: 9mm;
+            margin: 2mm 5mm;
+            padding: 0 4px 0 0;
+            background: white;
+            color: black;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .barcode-card canvas {
+            height: 9mm !important;
+            width: auto !important;
+            margin: 0 !important;
+        }
+        
+        .barcode-card .label {
+            font-size: 12px;
+            font-family: monospace;
+            font-weight: bold;
+            white-space: nowrap;
+            line-height: 1;
+            margin-top: 0;
+        }
+
+        @media print {
+            body * { visibility: hidden; }
+            .print-area, .print-area * { visibility: visible; }
+            
+            .print-area {
+                position: absolute;
+                top: 0; left: 0;
+                width: 100%;
+                display: block !important;
+            }
+
+            .barcode-card {
+                display: inline-flex !important;
+                align-items: center !important;
+                height: 9mm !important;
+                width: auto !important;
+                padding: 0 4px !important;
+                margin: 2mm !important;
+                border: 0.5px solid #666 !important;
+                border-radius: 0 !important;
+                page-break-inside: avoid;
+                break-inside: avoid;
+                background: white !important;
+                color: black !important;
+            }
+
+            .barcode-card canvas {
+                height: 9mm !important;
+                width: auto !important;
+                margin: 0 !important;
+            }
+
+            .barcode-card .label {
+                font-size: 10pt !important;
+                font-family: monospace;
+                font-weight: bold;
+                white-space: nowrap;
+                margin-left: 8px !important;
+                display: block !important;
+            }
+
+            button, .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-white p-4">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold">Gerar Códigos de Barras</h1>
+            <a href="index.html" class="text-zinc-400 hover:text-white">Voltar</a>
+        </div>
+
+        <div class="mb-4 flex gap-4 no-print bg-zinc-900 p-4 rounded-xl border border-zinc-800">
+            <div class="flex-1">
+                <label class="block text-xs text-zinc-400 mb-1">Buscar (Título ou Artista)</label>
+                <input type="text" id="inputBusca" placeholder="Ex: Forró..." class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div class="w-1/3 relative">
+                <label class="block text-xs text-zinc-400 mb-1">Filtrar Prateleira</label>
+                <select id="filterPrateleira" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 appearance-none custom-scrollbar cursor-pointer">
+                    <option value="">Prateleira (Todas)</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 pt-5 text-zinc-400">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-4 flex gap-2 no-print">
+            <button id="btnImprimirTodos" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded font-medium transition-colors">Imprimir Visíveis</button>
+            <button id="btnSelecionarTodos" class="bg-zinc-700 hover:bg-zinc-600 px-4 py-2 rounded transition-colors">Seleccionar Todos</button>
+            <button id="btnImprimirSelecionados" class="bg-emerald-700 hover:bg-emerald-600 px-4 py-2 rounded transition-colors">Imprimir Seleccionados</button>
+        </div>
+
+        <div id="listaProdutos" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="col-span-full text-zinc-500 py-4 text-center">
+                A carregar catálogo completo, por favor aguarde...
+            </div>
+        </div>
+        <div id="areaImpressao" class="print-area hidden"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://ulbqzvztwrqmaxbzsmmv.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_shOmcA8udv3Tw0xKYzafAw_s1YXgbDk';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let produtos = [];
+
+        async function carregarProdutos() {
+            let todosOsDados = [];
+            let limite = 1000;
+            let offset = 0;
+            let temMais = true;
+
+            while (temMais) {
+                // Adicionado o campo "numero" na busca
+                const { data, error } = await supabaseClient
+                    .from('catalogo')
+                    .select('id, titulo, artista, prateleira, numero') 
+                    .order('id')
+                    .range(offset, offset + limite - 1);
+
+                if (error) {
+                    alert('Erro ao carregar produtos');
+                    return;
+                }
+
+                todosOsDados = todosOsDados.concat(data);
+
+                if (data.length < limite) {
+                    temMais = false;
+                } else {
+                    offset += limite; 
+                }
+            }
+
+            produtos = todosOsDados;
+            popularSelectPrateleiras();
+            renderizarLista();
+        }
+
+        function popularSelectPrateleiras() {
+            const select = document.getElementById('filterPrateleira');
+            let prateleirasUnicas = [...new Set(produtos.map(p => p.prateleira).filter(p => p))];
+            prateleirasUnicas.sort();
+
+            prateleirasUnicas.forEach(prat => {
+                const option = document.createElement('option');
+                option.value = prat;
+                option.textContent = `Prateleira ${prat}`;
+                select.appendChild(option);
+            });
+        }
+
+        function renderizarLista() {
+            const termoBusca = document.getElementById('inputBusca').value.toLowerCase();
+            const prateleiraSelecionada = document.getElementById('filterPrateleira').value;
+            
+            const produtosFiltrados = produtos.filter(prod => {
+                const titulo = (prod.titulo || '').toLowerCase();
+                const artista = (prod.artista || '').toLowerCase();
+                
+                const matchBusca = titulo.includes(termoBusca) || artista.includes(termoBusca);
+                const matchPrateleira = prateleiraSelecionada === "" || prod.prateleira === prateleiraSelecionada;
+                
+                return matchBusca && matchPrateleira;
+            });
+
+            const container = document.getElementById('listaProdutos');
+            container.innerHTML = '';
+            
+            if (produtosFiltrados.length === 0) {
+                container.innerHTML = '<div class="col-span-full text-zinc-500 py-4 text-center">Nenhum produto encontrado com estes filtros.</div>';
+                return;
+            }
+
+            produtosFiltrados.forEach(prod => {
+                const idFormatado = String(prod.id).padStart(8, '0');
+                const card = document.createElement('div');
+                card.className = 'bg-zinc-900 p-3 rounded-xl border border-zinc-800 flex flex-col justify-between';
+                
+                // Formatação do número para visualização
+                const numTape = prod.numero ? `Nº ${prod.numero}` : 'S/N';
+
+                card.innerHTML = `
+                    <div class="flex items-start gap-2 mb-2">
+                        <input type="checkbox" class="sel-produto mt-1" data-id="${prod.id}">
+                        <div>
+                            <div class="font-bold text-sm leading-tight mb-1">${prod.titulo}</div>
+                            <div class="text-xs text-zinc-400">${prod.artista}</div>
+                            <div class="text-xs font-mono text-indigo-400 mt-1">Local: ${prod.prateleira || '—'} | Tape: ${numTape}</div>
+                        </div>
+                    </div>
+                    <div id="preview-${prod.id}" class="mt-2 flex justify-center bg-white p-1 rounded"></div>
+                `;
+                container.appendChild(card);
+                
+                gerarCodigoUnico(prod.id, idFormatado);
+            });
+        }
+
+        function gerarCodigoUnico(prodId, codigoTexto) {
+            const previewDiv = document.getElementById(`preview-${prodId}`);
+            if (!previewDiv) return;
+            previewDiv.innerHTML = ''; 
+            const canvas = document.createElement('canvas');
+            previewDiv.appendChild(canvas);
+            JsBarcode(canvas, codigoTexto, {
+                format: "CODE128",
+                width: 1,
+                height: 25,
+                displayValue: true,
+                fontSize: 12,
+                margin: 2
+            });
+            canvas.style.height = '30px';
+            canvas.style.width = 'auto';
+        }
+
+        function gerarTodosParaImpressao(idsSelecionados) {
+            const area = document.getElementById('areaImpressao');
+            area.innerHTML = '';
+            area.classList.remove('hidden');
+
+            const produtosParaImprimir = produtos.filter(p => idsSelecionados.includes(p.id));
+
+            produtosParaImprimir.forEach(prod => {
+                const codigo = String(prod.id).padStart(8, '0');
+                const card = document.createElement('div');
+                card.className = 'barcode-card';
+                
+                const canvas = document.createElement('canvas');
+                card.appendChild(canvas);
+                
+                const label = document.createElement('div');
+                label.className = 'label';
+                
+                // Texto formatado para a impressão na etiqueta
+                const numTape = prod.numero ? `Nº ${prod.numero}` : 'S/N';
+                label.innerText = `${prod.titulo} - ${prod.artista} | ${numTape}`; 
+                
+                card.appendChild(label);
+                area.appendChild(card);
+                
+                JsBarcode(canvas, codigo, {
+                    format: "CODE128",
+                    width: 1.2,
+                    height: 30,
+                    displayValue: false,
+                    margin: 0
+                });
+            });
+
+            window.print();
+            setTimeout(() => area.classList.add('hidden'), 500);
+        }
+
+        // Eventos
+        document.getElementById('inputBusca').addEventListener('input', renderizarLista);
+        document.getElementById('filterPrateleira').addEventListener('change', renderizarLista);
+
+        document.getElementById('btnImprimirTodos').addEventListener('click', () => {
+            const visiveis = Array.from(document.querySelectorAll('.sel-produto')).map(cb => parseInt(cb.dataset.id));
+            if (visiveis.length === 0) return alert('Nenhum produto visível para imprimir.');
+            gerarTodosParaImpressao(visiveis);
+        });
+
+        document.getElementById('btnSelecionarTodos').addEventListener('click', () => {
+            document.querySelectorAll('.sel-produto').forEach(cb => cb.checked = true);
+        });
+
+        document.getElementById('btnImprimirSelecionados').addEventListener('click', () => {
+            const selecionados = Array.from(document.querySelectorAll('.sel-produto:checked')).map(cb => parseInt(cb.dataset.id));
+            if (selecionados.length === 0) return alert('Seleccione pelo menos um produto nas caixas de seleção.');
+            gerarTodosParaImpressao(selecionados);
+        });
+
+        carregarProdutos();
+    </script>
+</body>
+</html>
