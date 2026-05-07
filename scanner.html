@@ -21,18 +21,14 @@
         <a href="index.html" class="text-zinc-400 hover:text-white">Voltar</a>
     </div>
 
-    <!-- Botão para iniciar câmara manualmente -->
-    <button id="btnIniciar" onclick="iniciarLeitor()" class="w-full mb-4 bg-labelAccent hover:bg-indigo-600 text-white font-medium py-3 px-4 rounded-xl transition-colors shadow-lg">
+    <button id="btnIniciar" class="w-full mb-4 bg-labelAccent hover:bg-indigo-600 text-white font-medium py-3 px-4 rounded-xl transition-colors shadow-lg">
         📸 Iniciar Câmara para Escanear
     </button>
 
-    <!-- Área da câmara (inicialmente oculta) -->
     <div id="reader" style="display: none;" class="bg-labelCard border border-zinc-800 rounded-xl p-4 shadow-xl mb-6"></div>
 
-    <!-- Mensagem de erro/permissão -->
     <div id="erroCamara" class="hidden bg-red-900/50 border border-red-700 rounded-xl p-3 text-sm text-red-200 mb-4"></div>
 
-    <!-- Card de resultado -->
     <div id="resultado" class="hidden bg-labelCard border border-zinc-800 rounded-xl p-6 shadow-xl">
         <div class="flex justify-between items-start border-b border-zinc-800 pb-4 mb-4">
             <div>
@@ -41,7 +37,6 @@
                 <p class="text-zinc-400" id="res-artista">...</p>
             </div>
         </div>
-
         <div class="space-y-3">
             <div class="flex justify-between">
                 <span class="text-zinc-500 text-sm">Prateleira</span>
@@ -56,125 +51,120 @@
                 <span class="font-medium" id="res-status">-</span>
             </div>
         </div>
-
-        <button onclick="reiniciarLeitor()" class="w-full mt-6 bg-labelAccent hover:bg-indigo-600 text-white font-medium py-2 px-4 rounded transition-colors">
+        <button id="btnReiniciar" class="w-full mt-6 bg-labelAccent hover:bg-indigo-600 text-white font-medium py-2 px-4 rounded transition-colors">
             Escanear Outra Fita
         </button>
     </div>
 </div>
 
 <script>
-    // Supabase
-    const supabaseUrl = 'https://ulbqzvztwrqmaxbzsmmv.supabase.co';
-    const supabaseKey = 'sb_publishable_shOmcA8udv3Tw0xKYzafAw_s1YXgbDk';
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    (function() {
+        // Supabase – sem conflito de declaração
+        const SUPABASE_URL = 'https://ulbqzvztwrqmaxbzsmmv.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_shOmcA8udv3Tw0xKYzafAw_s1YXgbDk';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let html5QrCode;
-    let scanning = false;
+        let html5QrCode = null;
+        let scanning = false;
 
-    const readerDiv = document.getElementById('reader');
-    const btnIniciar = document.getElementById('btnIniciar');
-    const resultadoDiv = document.getElementById('resultado');
-    const erroDiv = document.getElementById('erroCamara');
+        const readerDiv = document.getElementById('reader');
+        const btnIniciar = document.getElementById('btnIniciar');
+        const resultadoDiv = document.getElementById('resultado');
+        const erroDiv = document.getElementById('erroCamara');
+        const btnReiniciar = document.getElementById('btnReiniciar');
 
-    function mostrarErro(msg) {
-        erroDiv.innerText = msg;
-        erroDiv.classList.remove('hidden');
-        setTimeout(() => erroDiv.classList.add('hidden'), 5000);
-    }
+        function mostrarErro(msg) {
+            erroDiv.innerText = msg;
+            erroDiv.classList.remove('hidden');
+            setTimeout(() => erroDiv.classList.add('hidden'), 5000);
+        }
 
-    async function iniciarLeitor() {
-        // Evita múltiplas inicializações
-        if (scanning) return;
+        async function iniciarLeitor() {
+            if (scanning) return;
+            resultadoDiv.classList.add('hidden');
+            erroDiv.classList.add('hidden');
+            btnIniciar.style.display = 'none';
+            readerDiv.style.display = 'block';
 
-        // Limpa e esconde resultado anterior
-        resultadoDiv.classList.add('hidden');
-        erroDiv.classList.add('hidden');
-        btnIniciar.style.display = 'none';
-        readerDiv.style.display = 'block';
-
-        // Cria instância do Html5Qrcode (API de mais baixo nível)
-        html5QrCode = new Html5Qrcode("reader");
-
-        try {
-            scanning = true;
-            // Pede acesso à câmara traseira (preferencial) e começa a ler
-            await html5QrCode.start(
-                { facingMode: "environment" },  // câmara traseira em telemóveis
-                {
-                    fps: 10,
-                    qrbox: { width: 250, height: 100 },
-                    formatsToSupport: [ Html5QrcodeSupportedFormats.CODE_128 ]
-                },
-                onScanSuccess,
-                onScanFailure
-            );
-        } catch (err) {
-            console.error("Erro ao aceder à câmara:", err);
-            let mensagem = "Não foi possível aceder à câmara.\n";
-            if (err.name === "NotAllowedError") {
-                mensagem += "Permissão negada. Verifique as definições do navegador.";
-            } else if (err.name === "NotFoundError") {
-                mensagem += "Nenhuma câmara encontrada no dispositivo.";
-            } else if (err.name === "NotReadableError") {
-                mensagem += "A câmara está a ser usada por outra aplicação.";
-            } else {
-                mensagem += "Erro técnico: " + err.message;
+            html5QrCode = new Html5Qrcode("reader");
+            try {
+                scanning = true;
+                await html5QrCode.start(
+                    { facingMode: "environment" },
+                    {
+                        fps: 10,
+                        qrbox: { width: 250, height: 100 },
+                        formatsToSupport: [ Html5QrcodeSupportedFormats.CODE_128 ]
+                    },
+                    onScanSuccess,
+                    onScanFailure
+                );
+            } catch (err) {
+                console.error(err);
+                let mensagem = "Erro ao aceder à câmara.\n";
+                if (err.name === "NotAllowedError") mensagem += "Permissão negada. Verifique as definições do navegador.";
+                else if (err.name === "NotFoundError") mensagem += "Nenhuma câmara encontrada.";
+                else if (err.name === "NotReadableError") mensagem += "Câmara a ser usada por outra app.";
+                else mensagem += "Detalhe: " + err.message;
+                mostrarErro(mensagem);
+                reiniciarLeitor();
             }
-            mostrarErro(mensagem);
-            reiniciarLeitor();  // repõe o botão
         }
-    }
 
-    function onScanSuccess(decodedText, decodedResult) {
-        if (!scanning) return;  // segurança
+        function onScanSuccess(decodedText) {
+            if (!scanning) return;
+            if (html5QrCode) {
+                html5QrCode.stop();
+                scanning = false;
+            }
+            readerDiv.style.display = 'none';
+            resultadoDiv.classList.remove('hidden');
 
-        // Para a câmara assim que lê um código
-        if (html5QrCode) {
-            html5QrCode.stop();
-            scanning = false;
+            const idProduto = parseInt(decodedText, 10);
+            supabase
+                .from('catalogo')
+                .select('*')
+                .eq('id', idProduto)
+                .single()
+                .then(({ data, error }) => {
+                    if (error || !data) {
+                        document.getElementById('res-titulo').innerHTML = "Produto não encontrado";
+                        document.getElementById('res-artista').innerHTML = "Código inválido ou não registado.";
+                        document.getElementById('res-id').innerHTML = `CÓDIGO: ${decodedText}`;
+                        return;
+                    }
+                    document.getElementById('res-id').innerHTML = `CÓDIGO: ${decodedText}`;
+                    document.getElementById('res-titulo').innerHTML = data.titulo || 'Sem Título';
+                    document.getElementById('res-artista').innerHTML = data.artista || 'Artista Desconhecido';
+                    document.getElementById('res-prateleira').innerHTML = data.prateleira || 'Não definida';
+                    document.getElementById('res-gravadora').innerHTML = data.gravadora || '-';
+                    document.getElementById('res-status').innerHTML = data.stream_status || 'Pendente';
+                });
         }
-        readerDiv.style.display = 'none';
-        resultadoDiv.classList.remove('hidden');
 
-        const idProduto = parseInt(decodedText, 10);
-
-        supabase
-            .from('catalogo')
-            .select('*')
-            .eq('id', idProduto)
-            .single()
-            .then(({ data, error }) => {
-                if (error || !data) {
-                    document.getElementById('res-titulo').innerText = "Produto não encontrado";
-                    document.getElementById('res-artista').innerText = "Código inválido ou não registado.";
-                    document.getElementById('res-id').innerText = `CÓDIGO: ${decodedText}`;
-                    return;
-                }
-                document.getElementById('res-id').innerText = `CÓDIGO: ${decodedText}`;
-                document.getElementById('res-titulo').innerText = data.titulo || 'Sem Título';
-                document.getElementById('res-artista').innerText = data.artista || 'Artista Desconhecido';
-                document.getElementById('res-prateleira').innerText = data.prateleira || 'Não definida';
-                document.getElementById('res-gravadora').innerText = data.gravadora || '-';
-                document.getElementById('res-status').innerText = data.stream_status || 'Pendente';
-            });
-    }
-
-    function onScanFailure(error) {
-        // ignoramos falhas normais (cada frame sem código)
-    }
-
-    function reiniciarLeitor() {
-        // Para e limpa o scanner se estiver activo
-        if (html5QrCode && scanning) {
-            html5QrCode.stop().catch(e => console.warn("Erro ao parar scanner", e));
-            scanning = false;
+        function onScanFailure(/*error*/) {
+            // ignorado
         }
-        readerDiv.style.display = 'none';
-        resultadoDiv.classList.add('hidden');
-        btnIniciar.style.display = 'block';
-        erroDiv.classList.add('hidden');
-    }
+
+        function reiniciarLeitor() {
+            if (html5QrCode && scanning) {
+                html5QrCode.stop().catch(e => console.warn(e));
+                scanning = false;
+            }
+            readerDiv.style.display = 'none';
+            resultadoDiv.classList.add('hidden');
+            btnIniciar.style.display = 'block';
+            erroDiv.classList.add('hidden');
+        }
+
+        // Associar eventos (sem onclick inline)
+        btnIniciar.addEventListener('click', iniciarLeitor);
+        btnReiniciar.addEventListener('click', reiniciarLeitor);
+
+        // Expor globalmente caso precise (mas não é obrigatório)
+        window.iniciarLeitor = iniciarLeitor;
+        window.reiniciarLeitor = reiniciarLeitor;
+    })();
 </script>
 </body>
 </html>
