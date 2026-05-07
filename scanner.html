@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leitor de Fitas - Somax</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { labelAccent: '#6366f1', labelCard: '#18181b' } } }
+        }
+    </script>
+</head>
+<body class="bg-zinc-950 text-white min-h-screen p-4 flex flex-col items-center">
+
+    <div class="w-full max-w-md">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold">Leitor de Catálogo</h1>
+            <a href="index.html" class="text-zinc-400 hover:text-white">Voltar</a>
+        </div>
+
+        <!-- Botão para iniciar a câmara manualmente -->
+        <button id="btnIniciar" onclick="iniciarLeitor()" class="w-full mb-4 bg-labelAccent hover:bg-indigo-600 text-white font-medium py-3 px-4 rounded-xl transition-colors shadow-lg">
+            📸 Iniciar Câmara para Escanear
+        </button>
+
+        <!-- Área da câmara (inicialmente oculta) -->
+        <div id="reader" style="display: none;" class="bg-labelCard border border-zinc-800 rounded-xl p-4 shadow-xl mb-6"></div>
+
+        <!-- Card de resultado -->
+        <div id="resultado" class="hidden bg-labelCard border border-zinc-800 rounded-xl p-6 shadow-xl">
+            <div class="flex justify-between items-start border-b border-zinc-800 pb-4 mb-4">
+                <div>
+                    <span class="text-xs font-mono text-labelAccent bg-labelAccent/10 px-2 py-1 rounded" id="res-id">ID: 000</span>
+                    <h2 class="text-xl font-bold mt-2" id="res-titulo">Carregando...</h2>
+                    <p class="text-zinc-400" id="res-artista">...</p>
+                </div>
+            </div>
+            
+            <div class="space-y-3">
+                <div class="flex justify-between">
+                    <span class="text-zinc-500 text-sm">Prateleira</span>
+                    <span class="font-medium" id="res-prateleira">-</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-zinc-500 text-sm">Gravadora</span>
+                    <span class="font-medium" id="res-gravadora">-</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-zinc-500 text-sm">Status</span>
+                    <span class="font-medium" id="res-status">-</span>
+                </div>
+            </div>
+
+            <button onclick="reiniciarLeitor()" class="w-full mt-6 bg-labelAccent hover:bg-indigo-600 text-white font-medium py-2 px-4 rounded transition-colors">
+                Escanear Outra Fita
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Configuração Supabase (credenciais fornecidas)
+        const supabaseUrl = 'https://ulbqzvztwrqmaxbzsmmv.supabase.co';
+        const supabaseKey = 'sb_publishable_shOmcA8udv3Tw0xKYzafAw_s1YXgbDk';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        let html5QrcodeScanner = null;
+
+        // Iniciar o leitor da câmara (chamado pelo botão)
+        function iniciarLeitor() {
+            // Esconde o botão de iniciar
+            const btn = document.getElementById('btnIniciar');
+            if (btn) btn.style.display = 'none';
+            
+            // Esconde qualquer resultado anterior
+            document.getElementById('resultado').classList.add('hidden');
+            
+            // Limpa scanner anterior se existir
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.clear();
+                html5QrcodeScanner = null;
+            }
+            
+            // Mostra a área da câmara
+            const readerDiv = document.getElementById('reader');
+            readerDiv.style.display = 'block';
+            
+            // Cria nova instância do scanner
+            html5QrcodeScanner = new Html5QrcodeScanner(
+                "reader",
+                { 
+                    fps: 10, 
+                    qrbox: { width: 250, height: 100 },
+                    formatsToSupport: [ Html5QrcodeSupportedFormats.CODE_128 ]
+                },
+                false
+            );
+            
+            // Renderiza o scanner
+            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+            
+            // Verifica permissão da câmara (caso o utilizador bloqueie)
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .catch(function(err) {
+                    alert("A câmara foi bloqueada! Certifique-se de que está a usar HTTPS ou que permitiu o acesso. Erro: " + err.message);
+                    reiniciarLeitor(); // recoloca o botão
+                });
+        }
+        
+        // Quando a câmara lê um código de barras com sucesso
+        async function onScanSuccess(decodedText, decodedResult) {
+            // Para o scanner para evitar leituras repetidas
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.clear();
+                html5QrcodeScanner = null;
+            }
+            // Esconde a visualização da câmara
+            document.getElementById('reader').style.display = 'none';
+            // Mostra o card de resultado
+            document.getElementById('resultado').classList.remove('hidden');
+            
+            // Converte o texto lido para número (ex: "00000045" -> 45)
+            const idProduto = parseInt(decodedText, 10);
+            
+            // Busca no Supabase
+            const { data, error } = await supabase
+                .from('catalogo')
+                .select('*')
+                .eq('id', idProduto)
+                .single();
+            
+            if (error || !data) {
+                document.getElementById('res-titulo').innerText = "Produto não encontrado";
+                document.getElementById('res-artista').innerText = "Código inválido ou não registado.";
+                document.getElementById('res-id').innerText = `CÓDIGO: ${decodedText}`;
+                return;
+            }
+            
+            // Preenche o card com os dados
+            document.getElementById('res-id').innerText = `CÓDIGO: ${decodedText}`;
+            document.getElementById('res-titulo').innerText = data.titulo || 'Sem Título';
+            document.getElementById('res-artista').innerText = data.artista || 'Artista Desconhecido';
+            document.getElementById('res-prateleira').innerText = data.prateleira || 'Não definida';
+            document.getElementById('res-gravadora').innerText = data.gravadora || '-';
+            document.getElementById('res-status').innerText = data.stream_status || 'Pendente';
+        }
+        
+        // Falha a cada frame que não encontra código (ignoramos silenciosamente)
+        function onScanFailure(error) {
+            // não é necessário mostrar alertas
+        }
+        
+        // Reinicia o fluxo: volta a mostrar o botão e para a câmara
+        function reiniciarLeitor() {
+            // Para e limpa o scanner se existir
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.clear();
+                html5QrcodeScanner = null;
+            }
+            // Esconde a área da câmara e o resultado
+            document.getElementById('reader').style.display = 'none';
+            document.getElementById('resultado').classList.add('hidden');
+            // Mostra novamente o botão de iniciar
+            const btn = document.getElementById('btnIniciar');
+            if (btn) btn.style.display = 'block';
+        }
+        
+        // Não inicia automaticamente ao carregar a página
+        // O utilizador terá de clicar no botão "Iniciar Câmara"
+    </script>
+</body>
+</html>
