@@ -23,6 +23,10 @@
             }
         }
     </script>
+    <script type="module" src="./js/auth-guard.js"></script>
+
+
+
     <style>
         .custom-scrollbar::-webkit-scrollbar { height: 8px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #18181b; }
@@ -94,8 +98,8 @@
     <div class="max-w-7xl mx-auto">
         <header class="mb-8 border-b border-zinc-800 pb-6 flex flex-wrap justify-between items-center gap-4">
             <div>
-                <h1 class="text-3xl font-bold gold-gradient tracking-tight uppercase">
-                    Catálogo Somax
+                <h1 class="text-3xl font-bold text-white tracking-tight uppercase">
+                    Catálogo <span class="text-labelAccent">Somax</span>
                 </h1>
                 <p class="text-sm text-zinc-500 mt-1">Gestão de Acervo Musical</p>
             </div>
@@ -332,80 +336,8 @@
     </div>
 
 
-    <!-- MODAL de novidades do sistema -->
-    <div id="modalNovidades" class="fixed inset-0 bg-black/90 hidden flex items-center justify-center z-[100] backdrop-blur-md transition-opacity">
-        <div class="bg-zinc-950 border border-yellow-500/50 rounded-2xl p-8 w-11/12 max-w-lg shadow-[0_0_50px_rgba(234,179,8,0.15)] relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-600"></div>
-
-            <div class="text-center mb-6">
-                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-yellow-500/10 mb-4 border border-yellow-500/20">
-                    <span class="text-3xl">✨</span>
-                </div>
-                <h2 id="novidadesTitulo" class="text-2xl font-bold text-yellow-400 mb-2">Novidades!</h2>
-                <p id="novidadesMensagem" class="text-zinc-300 text-sm leading-relaxed"></p>
-            </div>
-
-            <div class="bg-zinc-900/50 rounded-xl p-5 border border-zinc-800/50 mb-6">
-                <ul id="novidadesLista" class="space-y-3 text-sm text-zinc-300"></ul>
-            </div>
-
-            <p id="novidadesRodape" class="text-center text-xs text-yellow-500/70 mb-6 italic"></p>
-
-            <button type="button" onclick="fecharModalNovidades()" class="w-full bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-zinc-950 font-bold py-3 px-4 rounded-xl transition-all transform hover:scale-[1.02] shadow-lg">
-                Entendi, vamos lá!
-            </button>
-        </div>
-    </div>
-
     <script type="module" src="./js/app.js"></script>
-    <script>
-        async function verificarNovidades() {
-            try {
-                const resposta = await fetch('./novidades.json', { cache: 'no-store' });
-                if (!resposta.ok) return;
 
-                const dados = await resposta.json();
-                if (!Array.isArray(dados) || dados.length === 0) return;
-
-                const novidade = dados.find(item => item && item.ativo === true);
-                if (!novidade || !novidade.versao) return;
-
-                const ultimaVersaoVista = localStorage.getItem('somax_versao_vista');
-                if (ultimaVersaoVista === novidade.versao) return;
-
-                document.getElementById('novidadesTitulo').innerText = novidade.titulo || 'Novidades!';
-                document.getElementById('novidadesMensagem').innerText = novidade.mensagem || '';
-                document.getElementById('novidadesRodape').innerText = novidade.rodape || '';
-
-                const ul = document.getElementById('novidadesLista');
-                ul.innerHTML = '';
-
-                const itens = Array.isArray(novidade.itens) ? novidade.itens : [];
-                itens.forEach(item => {
-                    const li = document.createElement('li');
-                    li.className = 'flex items-start';
-                    li.innerHTML = `<span class="text-yellow-500 mr-2 flex-shrink-0">✦</span> <span>${item}</span>`;
-                    ul.appendChild(li);
-                });
-
-                const modal = document.getElementById('modalNovidades');
-                modal.dataset.versao = novidade.versao;
-                modal.classList.remove('hidden');
-            } catch (erro) {
-                console.log('Sistema de novidades ignorado (JSON não encontrado ou vazio).');
-            }
-        }
-
-        function fecharModalNovidades() {
-            const modal = document.getElementById('modalNovidades');
-            const versao = modal.dataset.versao;
-            if (versao) localStorage.setItem('somax_versao_vista', versao);
-            modal.classList.add('hidden');
-        }
-
-        window.fecharModalNovidades = fecharModalNovidades;
-        window.addEventListener('DOMContentLoaded', verificarNovidades);
-    </script>
     <script>
         if ("serviceWorker" in navigator) {
             window.addEventListener("load", () => {

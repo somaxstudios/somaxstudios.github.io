@@ -204,181 +204,395 @@
     </div>
 </div>
 
-<script>
-    (function() {
-        const SUPABASE_URL = 'https://ulbqzvztwrqmaxbzsmmv.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_shOmcA8udv3Tw0xKYzafAw_s1YXgbDk';
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+<script type="module">
 
-        let html5QrCode = null;
-        let scanning = false;
-        let idAtual = null;
-        let isEditing = false;
-        let dadosCarregados = { catalogo: {}, ficha: {} };
+import { supabase } from './js/supabase-client.js';
 
-        const startContainer = document.getElementById('start-container');
-        const readerContainer = document.getElementById('reader-container');
-        const resultadoDiv = document.getElementById('resultado');
-        const erroDiv = document.getElementById('erroCamara');
+let html5QrCode = null;
+let scanning = false;
+let idAtual = null;
+let isEditing = false;
 
-        function mostrarErro(msg) {
-            erroDiv.innerText = msg;
-            erroDiv.classList.remove('hidden');
-            setTimeout(() => erroDiv.classList.add('hidden'), 5000);
-        }
+let dadosCarregados = {
+    catalogo: {},
+    ficha: {}
+};
 
-        async function iniciarLeitor() {
-            if (scanning) return;
-            
-            // Troca de ecrãs
-            startContainer.classList.add('hidden');
-            startContainer.classList.remove('flex');
-            resultadoDiv.classList.add('hidden');
-            erroDiv.classList.add('hidden');
-            readerContainer.classList.remove('hidden');
+const startContainer = document.getElementById('start-container');
+const readerContainer = document.getElementById('reader-container');
+const resultadoDiv = document.getElementById('resultado');
+const erroDiv = document.getElementById('erroCamara');
 
-            html5QrCode = new Html5Qrcode("reader");
-            
-            try {
-                scanning = true;
-                await html5QrCode.start(
-                    { facingMode: "environment" },
-                    { fps: 10, qrbox: { width: 250, height: 100 }, formatsToSupport: [ Html5QrcodeSupportedFormats.CODE_128 ] },
-                    onScanSuccess,
-                    () => {} // Ignora falhas de frame
-                );
-            } catch (err) {
-                mostrarErro("Erro ao aceder à câmara. Verifique as permissões.");
-                reiniciarLeitor();
+function mostrarErro(msg) {
+    erroDiv.innerText = msg;
+    erroDiv.classList.remove('hidden');
+
+    setTimeout(() => {
+        erroDiv.classList.add('hidden');
+    }, 5000);
+}
+
+async function iniciarLeitor() {
+    if (scanning) return;
+
+    startContainer.classList.add('hidden');
+    startContainer.classList.remove('flex');
+
+    resultadoDiv.classList.add('hidden');
+    erroDiv.classList.add('hidden');
+
+    readerContainer.classList.remove('hidden');
+
+    html5QrCode = new Html5Qrcode("reader");
+
+    try {
+
+        scanning = true;
+
+        await html5QrCode.start(
+            { facingMode: "environment" },
+
+            {
+                fps: 10,
+                qrbox: {
+                    width: 250,
+                    height: 100
+                },
+                formatsToSupport: [
+                    Html5QrcodeSupportedFormats.CODE_128
+                ]
+            },
+
+            onScanSuccess,
+
+            () => {
+                // ignora falhas de frame
             }
+        );
+
+    } catch (err) {
+
+        console.error(err);
+
+        mostrarErro(
+            "Erro ao acessar a câmera. Verifique as permissões."
+        );
+
+        reiniciarLeitor();
+    }
+}
+
+async function onScanSuccess(decodedText) {
+
+    if (!scanning) return;
+
+    try {
+
+        if (html5QrCode) {
+            await html5QrCode.stop().catch(e => console.warn(e));
         }
 
-        async function onScanSuccess(decodedText) {
-            if (!scanning) return;
-            if (html5QrCode) { await html5QrCode.stop().catch(e => console.warn(e)); scanning = false; }
-            
-            readerContainer.classList.add('hidden');
-            resultadoDiv.classList.remove('hidden');
+        scanning = false;
 
-            idAtual = parseInt(decodedText, 10);
-            
-            const resCatalogo = await supabaseClient.from('catalogo').select('*').eq('id', idAtual).single();
-            if (resCatalogo.error) {
-                document.getElementById('res-titulo').innerText = "Não encontrado";
-                return;
-            }
-            dadosCarregados.catalogo = resCatalogo.data;
+        readerContainer.classList.add('hidden');
+        resultadoDiv.classList.remove('hidden');
 
-            const resFicha = await supabaseClient.from('ficha_tecnica').select('*').eq('catalogo_id', idAtual).single();
-            dadosCarregados.ficha = resFicha.data || {};
+        idAtual = parseInt(decodedText, 10);
 
-            atualizarInterfaceEcra();
-            if(isEditing) toggleEditMode(); // Volta a bloquear os campos
+        if (!idAtual || isNaN(idAtual)) {
+            mostrarErro("Código inválido.");
+            return;
         }
 
-        function atualizarInterfaceEcra() {
-            const prod = dadosCarregados.catalogo;
-            const ficha = dadosCarregados.ficha;
+        const resCatalogo = await supabase
+            .from('catalogo')
+            .select('*')
+            .eq('id', idAtual)
+            .single();
 
-            document.getElementById('res-id').innerText = `ID: ${prod.id}`;
-            document.getElementById('res-titulo').innerText = prod.titulo;
-            document.getElementById('res-artista').innerText = prod.artista;
-            document.getElementById('res-local').innerText = `Prateleira: ${prod.prateleira || '-'} | Tape: ${prod.numero || 'S/N'}`;
+        if (resCatalogo.error || !resCatalogo.data) {
 
-            document.getElementById('in_interprete').value = ficha.interprete || '';
-            document.getElementById('in_genero').value = ficha.genero || '';
-            document.getElementById('in_compositores').value = ficha.compositores || '';
-            document.getElementById('in_musicos').value = ficha.musicos || '';
-            document.getElementById('in_tipo').value = ficha.tipo_produto || '';
-            document.getElementById('in_faixas').value = ficha.faixas || '';
+            console.error(resCatalogo.error);
+
+            document.getElementById('res-titulo').innerText =
+                "Produto não encontrado";
+
+            document.getElementById('res-artista').innerText = "-";
+            document.getElementById('res-local').innerText = "-";
+
+            return;
         }
 
-        window.prepararImpressao = function() {
-            const prod = dadosCarregados.catalogo;
-            const ficha = dadosCarregados.ficha;
+        dadosCarregados.catalogo = resCatalogo.data;
 
-            document.getElementById('prt-titulo').innerText = prod.titulo.toUpperCase();
-            document.getElementById('prt-artista').innerText = (ficha.interprete || prod.artista).toUpperCase();
-            document.getElementById('prt-genero').innerText = ficha.genero || 'NÃO ESPECIFICADO';
-            document.getElementById('prt-id').innerText = prod.id;
-            document.getElementById('prt-numero').innerText = prod.numero || '---';
-            document.getElementById('prt-local').innerText = prod.prateleira || '---';
-            document.getElementById('prt-tipo').innerText = ficha.tipo_produto || 'GERAL';
-            document.getElementById('prt-compositores').innerText = ficha.compositores || 'NÃO REGISTRADOS';
-            document.getElementById('prt-musicos').innerText = ficha.musicos || 'NÃO REGISTRADOS';
-            document.getElementById('prt-faixas').innerText = ficha.faixas || 'Sem tracklist registada.';
-            document.getElementById('prt-data').innerText = new Date().toLocaleDateString('pt-BR');
+        const resFicha = await supabase
+            .from('ficha_tecnica')
+            .select('*')
+            .eq('catalogo_id', idAtual)
+            .single();
 
-            window.print();
+        dadosCarregados.ficha = resFicha.data || {};
+
+        atualizarInterfaceEcra();
+
+        if (isEditing) {
+            toggleEditMode();
+        }
+
+    } catch (err) {
+
+        console.error(err);
+
+        mostrarErro("Erro ao processar leitura.");
+    }
+}
+
+function atualizarInterfaceEcra() {
+
+    const prod = dadosCarregados.catalogo;
+    const ficha = dadosCarregados.ficha;
+
+    document.getElementById('res-id').innerText =
+        `ID: ${prod.id || '-'}`;
+
+    document.getElementById('res-titulo').innerText =
+        prod.titulo || 'Sem título';
+
+    document.getElementById('res-artista').innerText =
+        prod.artista || 'Sem artista';
+
+    document.getElementById('res-local').innerText =
+        `Prateleira: ${prod.prateleira || '-'} | Tape: ${prod.numero || 'S/N'}`;
+
+    document.getElementById('in_interprete').value =
+        ficha.interprete || '';
+
+    document.getElementById('in_genero').value =
+        ficha.genero || '';
+
+    document.getElementById('in_compositores').value =
+        ficha.compositores || '';
+
+    document.getElementById('in_musicos').value =
+        ficha.musicos || '';
+
+    document.getElementById('in_tipo').value =
+        ficha.tipo_produto || '';
+
+    document.getElementById('in_faixas').value =
+        ficha.faixas || '';
+}
+
+window.prepararImpressao = function () {
+
+    const prod = dadosCarregados.catalogo;
+    const ficha = dadosCarregados.ficha;
+
+    document.getElementById('prt-titulo').innerText =
+        (prod.titulo || '').toUpperCase();
+
+    document.getElementById('prt-artista').innerText =
+        (ficha.interprete || prod.artista || '').toUpperCase();
+
+    document.getElementById('prt-genero').innerText =
+        ficha.genero || 'NÃO ESPECIFICADO';
+
+    document.getElementById('prt-id').innerText =
+        prod.id || '-';
+
+    document.getElementById('prt-numero').innerText =
+        prod.numero || '---';
+
+    document.getElementById('prt-local').innerText =
+        prod.prateleira || '---';
+
+    document.getElementById('prt-tipo').innerText =
+        ficha.tipo_produto || 'GERAL';
+
+    document.getElementById('prt-compositores').innerText =
+        ficha.compositores || 'NÃO REGISTRADOS';
+
+    document.getElementById('prt-musicos').innerText =
+        ficha.musicos || 'NÃO REGISTRADOS';
+
+    document.getElementById('prt-faixas').innerText =
+        ficha.faixas || 'Sem tracklist registrada.';
+
+    document.getElementById('prt-data').innerText =
+        new Date().toLocaleDateString('pt-BR');
+
+    window.print();
+};
+
+function toggleEditMode() {
+
+    isEditing = !isEditing;
+
+    const inputs = document.querySelectorAll('.ficha-input');
+
+    const btnSalvar =
+        document.getElementById('btnSalvar');
+
+    inputs.forEach(input => {
+
+        input.disabled = !isEditing;
+
+        if (isEditing) {
+
+            input.classList.add(
+                'bg-zinc-900',
+                'px-2',
+                'rounded'
+            );
+
+        } else {
+
+            input.classList.remove(
+                'bg-zinc-900',
+                'px-2',
+                'rounded'
+            );
+        }
+    });
+
+    btnSalvar.classList.toggle('hidden', !isEditing);
+
+    document.getElementById('btnToggleEdit').innerText =
+        isEditing
+            ? "❌ Cancelar"
+            : "✏️ Editar";
+}
+
+async function salvarFicha(e) {
+
+    e.preventDefault();
+
+    const btnSalvar =
+        document.getElementById('btnSalvar');
+
+    btnSalvar.innerText = "Salvando...";
+
+    try {
+
+        const dados = {
+
+            catalogo_id: idAtual,
+
+            interprete:
+                document.getElementById('in_interprete').value,
+
+            genero:
+                document.getElementById('in_genero').value,
+
+            compositores:
+                document.getElementById('in_compositores').value,
+
+            musicos:
+                document.getElementById('in_musicos').value,
+
+            tipo_produto:
+                document.getElementById('in_tipo').value,
+
+            faixas:
+                document.getElementById('in_faixas').value
         };
 
-        function toggleEditMode() {
-            isEditing = !isEditing;
-            const inputs = document.querySelectorAll('.ficha-input');
-            const btnSalvar = document.getElementById('btnSalvar');
-            
-            inputs.forEach(input => {
-                input.disabled = !isEditing;
-                if(isEditing) input.classList.add('bg-zinc-900', 'px-2', 'rounded');
-                else input.classList.remove('bg-zinc-900', 'px-2', 'rounded');
-            });
-            
-            btnSalvar.classList.toggle('hidden', !isEditing);
-            document.getElementById('btnToggleEdit').innerText = isEditing ? "❌ Cancelar" : "✏️ Editar";
+        const { error } = await supabase
+            .from('ficha_tecnica')
+            .upsert(
+                dados,
+                {
+                    onConflict: 'catalogo_id'
+                }
+            );
+
+        if (error) {
+
+            console.error(error);
+
+            alert("Erro ao salvar.");
+
+            btnSalvar.innerText =
+                "💾 Guardar Ficha";
+
+            return;
         }
 
-        async function salvarFicha(e) {
-            e.preventDefault();
-            const btnSalvar = document.getElementById('btnSalvar');
-            btnSalvar.innerText = "A guardar...";
-            
-            const dados = {
-                catalogo_id: idAtual,
-                interprete: document.getElementById('in_interprete').value,
-                genero: document.getElementById('in_genero').value,
-                compositores: document.getElementById('in_compositores').value,
-                musicos: document.getElementById('in_musicos').value,
-                tipo_produto: document.getElementById('in_tipo').value,
-                faixas: document.getElementById('in_faixas').value
-            };
-            const { error } = await supabaseClient.from('ficha_tecnica').upsert(dados, { onConflict: 'catalogo_id' });
-            
-            if (error) {
-                alert("Erro ao salvar.");
-                btnSalvar.innerText = "💾 Guardar Ficha";
-            } else { 
-                btnSalvar.innerText = "✅ Salvo!";
-                dadosCarregados.ficha = dados;
-                setTimeout(() => {
-                    toggleEditMode();
-                    btnSalvar.innerText = "💾 Guardar Ficha";
-                }, 800);
-            }
+        btnSalvar.innerText = "✅ Salvo!";
+
+        dadosCarregados.ficha = dados;
+
+        setTimeout(() => {
+
+            toggleEditMode();
+
+            btnSalvar.innerText =
+                "💾 Guardar Ficha";
+
+        }, 800);
+
+    } catch (err) {
+
+        console.error(err);
+
+        alert("Erro inesperado.");
+
+        btnSalvar.innerText =
+            "💾 Guardar Ficha";
+    }
+}
+
+window.reiniciarLeitor = async function () {
+
+    try {
+
+        if (html5QrCode && scanning) {
+
+            await html5QrCode
+                .stop()
+                .catch(e => console.warn(e));
+
+            scanning = false;
         }
 
-        window.reiniciarLeitor = function() {
-            if (html5QrCode && scanning) {
-                html5QrCode.stop().catch(e => console.warn(e));
-                scanning = false;
-            }
-            idAtual = null;
-            if(isEditing) toggleEditMode();
-            
-            // Voltar ao estado "vazio" elegante
-            readerContainer.classList.add('hidden');
-            resultadoDiv.classList.add('hidden');
-            startContainer.classList.remove('hidden');
-            startContainer.classList.add('flex');
-            erroDiv.classList.add('hidden');
-        };
+    } catch (err) {
 
-        // Event Listeners
-        document.getElementById('btnIniciar').addEventListener('click', iniciarLeitor);
-        document.getElementById('btnReiniciar').addEventListener('click', reiniciarLeitor);
-        document.getElementById('btnToggleEdit').addEventListener('click', toggleEditMode);
-        document.getElementById('formFicha').addEventListener('submit', salvarFicha);
+        console.warn(err);
+    }
 
-    })();
+    idAtual = null;
+
+    if (isEditing) {
+        toggleEditMode();
+    }
+
+    readerContainer.classList.add('hidden');
+
+    resultadoDiv.classList.add('hidden');
+
+    startContainer.classList.remove('hidden');
+    startContainer.classList.add('flex');
+
+    erroDiv.classList.add('hidden');
+};
+
+document
+    .getElementById('btnIniciar')
+    .addEventListener('click', iniciarLeitor);
+
+document
+    .getElementById('btnReiniciar')
+    .addEventListener('click', reiniciarLeitor);
+
+document
+    .getElementById('btnToggleEdit')
+    .addEventListener('click', toggleEditMode);
+
+document
+    .getElementById('formFicha')
+    .addEventListener('submit', salvarFicha);
+
 </script>
+
 </body>
 </html>

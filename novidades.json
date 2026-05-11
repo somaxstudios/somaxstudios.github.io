@@ -1,16 +1,23 @@
 [
   {
     "ativo": true,
-    "versao": "2.0",
-    "titulo": "🚀 Novidades no Catálogo Somax!",
-    "mensagem": "O sistema foi atualizado com ferramentas profissionais de gestão de arquivo físico e digital.",
+    "versao": "2.1",
+    "titulo": "🚀 Super Atualização: Gestão, Relatórios & Segurança",
+    "mensagem": "Consolidamos todas as novas ferramentas profissionais para o controle total do acervo Somax Studios.",
     "itens": [
-      "Leitor de Códigos de Barras integrado com a câmara do telefone.",
-      "Novo Mini-CMS: Edite a Ficha Técnica completa no momento da leitura.",
-      "Impressão de Etiquetas (9mm) aprimorada com identificação do Nº do Tape.",
-      "Impressão de Fichas de Arquivo com layout clássico de estúdio (PolyMusic).",
-      "Paginação inteligente e filtros avançados por prateleira."
+      "Nova Central de Relatórios: Gere documentos informativos de saúde do catálogo.",
+      "Segurança Corporativa: Novo login via Supabase restrito ao domínio @somax.com.br.",
+      "Leitor de Código de Barras: Integração direta com a câmara do telefone para buscas rápidas.",
+      "Mini-CMS Integrado: Edite fichas técnicas e metadados no momento da consulta.",
+      "Nota: A consulta dos metadados e a edição das fichas tecnicas dos produtos ainda estão sem informações , a inserção dos dados precisa ser feita manualmente na hora da consulta do codgo de barras.",
+      "Impressão Profissional: Etiquetas de 9mm com codigo de barras e Fichas de Arquivo no padrão clássico PolyMusic com nome do produto e N° do Tape.",
+      "Mapas de Ocupação: Visualização em grade das prateleiras e filtros avançados por localização.",
+      "Alertas de Pendências: Identificação automática de itens sem Artista ou Nº de Tape."
     ],
-    "rodape": "Aproveite as novas funcionalidades!"
+    "rodape": {
+      "agradecimento": "A ferramenta definitiva para a gestão da Somax Studios.",
+      "contato": "Notou alguma dificuldade ou inconsistência? Entre em contato com o administrativo @Ulisses JR para indicar melhorias no sistema.",
+      "informativo": "Lembre-se: esta é uma ferramenta interna, exclusiva para uso dos colaboradores da Somax Studios. O acesso é restrito e monitorado para garantir a segurança e integridade dos dados do acervo, Caso ainda não tenha seu acesso, procure o departamento administrativo."
+    }
   }
 ]

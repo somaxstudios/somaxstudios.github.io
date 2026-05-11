@@ -1,10 +1,6 @@
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-import { inicializarDashboard } from './dashboard.js';
 
-// Configuração Supabase
-const supabaseUrl = 'https://ulbqzvztwrqmaxbzsmmv.supabase.co';
-const supabaseKey = 'sb_publishable_shOmcA8udv3Tw0xKYzafAw_s1YXgbDk';
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { inicializarDashboard } from './dashboard.js';
+import { supabase } from './supabase-client.js';
 
 // Elementos DOM
 const tableBody = document.getElementById('tableBody');
@@ -611,7 +607,7 @@ async function salvarProduto() {
     const artista = artistaInput !== '' ? artistaInput : "Sem identificação";
 
     const btn = document.getElementById('btnSalvar');
-    btn.innerText = "Aguarde enquanto salvamos o Produto...";
+    btn.innerText = "A guardar...";
     btn.disabled = true;
 
     let podeLancarVal = document.getElementById('addPodeLancar').value;

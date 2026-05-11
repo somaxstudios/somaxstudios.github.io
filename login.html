@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Somax Studios — Acesso Restrito</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            gold: {
+              400: '#e8d48b',
+              500: '#c9a84c',
+              600: '#a68a3b',
+              700: '#8a7234',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+
+  <style>
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background:
+        radial-gradient(circle at top, rgba(201,168,76,0.12), transparent 28%),
+        radial-gradient(circle at bottom, rgba(201,168,76,0.06), transparent 30%),
+        linear-gradient(160deg, #050505 0%, #111 45%, #050505 100%);
+      color: #e5e7eb;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .gold-text-gradient {
+      background: linear-gradient(135deg, #f3e5ad 0%, #c9a84c 50%, #8a7234 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .premium-border {
+      border: 1px solid rgba(201, 168, 76, 0.22);
+    }
+
+    .premium-border:focus-within {
+      border-color: rgba(201, 168, 76, 0.55);
+      box-shadow: 0 0 18px rgba(201, 168, 76, 0.12);
+    }
+
+    .safe-screen {
+      min-height: 100svh;
+      padding-top: max(18px, env(safe-area-inset-top));
+      padding-bottom: max(18px, env(safe-area-inset-bottom));
+    }
+
+    @media (max-height: 700px) {
+      .mobile-compact-logo {
+        width: 3.5rem !important;
+        height: 3.5rem !important;
+        border-radius: 1rem !important;
+      }
+
+      .mobile-compact-title {
+        font-size: 1.55rem !important;
+      }
+
+      .mobile-compact-header {
+        margin-bottom: 1.25rem !important;
+      }
+
+      .mobile-compact-card {
+        padding: 1.15rem !important;
+      }
+
+      .mobile-compact-footer {
+        margin-top: 1.25rem !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="safe-screen flex items-center justify-center px-4 sm:px-6">
+
+    <section class="w-full max-w-[420px]">
+
+      <header class="mobile-compact-header text-center mb-7 sm:mb-9">
+        <div class="relative inline-flex mb-4 sm:mb-5">
+          <div class="absolute inset-0 bg-gold-500 blur-2xl opacity-20 rounded-full"></div>
+
+          <div class="mobile-compact-logo relative w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-gold-400 to-gold-700 rounded-2xl flex items-center justify-center shadow-2xl rotate-3">
+            <span class="text-2xl sm:text-3xl font-black text-black tracking-tighter">SX</span>
+          </div>
+        </div>
+
+        <h1 class="mobile-compact-title text-2xl sm:text-3xl font-black tracking-tight gold-text-gradient uppercase italic">
+          Somax Studios
+        </h1>
+
+        <p class="text-gray-500 text-[11px] sm:text-sm font-semibold tracking-[0.22em] mt-2 uppercase">
+          Acervo & Relatórios
+        </p>
+      </header>
+
+      <section class="mobile-compact-card bg-white/[0.035] backdrop-blur-xl premium-border p-5 sm:p-8 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.55)]">
+
+        <div class="mb-5">
+          <h2 class="text-lg sm:text-xl font-bold text-white">Acesso restrito</h2>
+          <p class="text-xs sm:text-sm text-gray-500 mt-1">
+            Entre com suas credenciais para acessar o painel.
+          </p>
+        </div>
+
+        <form class="space-y-4 sm:space-y-5" onsubmit="event.preventDefault(); realizarLogin();">
+
+          <div>
+            <label for="usuario" class="block text-[11px] font-bold text-gold-400 uppercase tracking-wider mb-2 ml-1">
+              Usuário
+            </label>
+
+            <div class="relative group">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-gold-500 transition-colors">
+                <i data-lucide="user" class="w-5 h-5"></i>
+              </div>
+
+              <input
+                type="text"
+                id="usuario"
+                name="usuario"
+                autocomplete="username"
+                inputmode="text"
+                class="w-full pl-11 pr-4 py-4 sm:py-3.5 bg-black/45 border border-white/10 rounded-2xl text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-gold-500/60 focus:border-gold-500/60 transition-all text-base"
+                placeholder="Digite seu usuário"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label for="senha" class="block text-[11px] font-bold text-gold-400 uppercase tracking-wider mb-2 ml-1">
+              Senha
+            </label>
+
+            <div class="relative group">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-gold-500 transition-colors">
+                <i data-lucide="lock" class="w-5 h-5"></i>
+              </div>
+
+              <input
+                type="password"
+                id="senha"
+                name="senha"
+                autocomplete="current-password"
+                class="w-full pl-11 pr-12 py-4 sm:py-3.5 bg-black/45 border border-white/10 rounded-2xl text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-gold-500/60 focus:border-gold-500/60 transition-all text-base"
+                placeholder="••••••••"
+              />
+
+              <button
+                type="button"
+                id="toggleSenha"
+                class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-gold-400 transition"
+                aria-label="Mostrar ou ocultar senha"
+              >
+                <i data-lucide="eye" class="w-5 h-5"></i>
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            class="group relative w-full py-4 bg-gradient-to-r from-gold-500 to-gold-700 text-black font-black rounded-2xl hover:from-gold-400 hover:to-gold-600 transition-all duration-300 shadow-[0_10px_24px_rgba(201,168,76,0.22)] active:scale-[0.98] text-sm sm:text-base tracking-wide"
+          >
+            <span class="flex items-center justify-center gap-2">
+              ACESSAR PAINEL
+              <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+            </span>
+          </button>
+
+        </form>
+
+        <div class="mt-5 pt-5 border-t border-white/10">
+          <p class="text-[11px] text-gray-500 flex items-center justify-center gap-2 text-center">
+            <i data-lucide="shield-check" class="w-4 h-4 text-gold-600"></i>
+            Acesso autorizado somente para equipe Somax.
+          </p>
+        </div>
+      </section>
+
+      <footer class="mobile-compact-footer mt-7 text-center">
+        <p class="text-gray-600 text-[11px] flex items-center justify-center gap-2">
+          <i data-lucide="lock-keyhole" class="w-4 h-4"></i>
+          Ambiente seguro — uso interno - © 2026 Somax Studios
+        </p>
+
+      </footer>
+
+    </section>
+  </main>
+
+  <div id="modal-novidades" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/80 backdrop-blur-md"></div>
+
+    <div class="relative w-full max-w-lg max-h-[90svh] overflow-y-auto bg-[#111] border border-gold-500/30 rounded-3xl shadow-2xl">
+      <div class="p-6 sm:p-8">
+        <div class="text-center mb-6">
+          <h2 id="news-title" class="text-xl sm:text-2xl font-bold gold-text-gradient mb-2"></h2>
+          <p id="news-message" class="text-gray-400 text-sm"></p>
+        </div>
+
+        <ul id="news-list" class="space-y-3 mb-8"></ul>
+
+        <button
+          onclick="fecharNovidades()"
+          class="w-full py-4 bg-white/5 border border-white/10 hover:bg-white/10 text-gold-400 font-bold rounded-xl transition-all"
+        >
+          Entendido, vamos lá!
+        </button>
+
+        <p id="news-footer" class="text-center text-[10px] text-gray-600 mt-4 uppercase tracking-widest"></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+
+      const btn = document.getElementById('toggleSenha');
+      const input = document.getElementById('senha');
+
+      if (btn && input) {
+        btn.addEventListener('click', () => {
+          const mostrar = input.type === 'password';
+          input.type = mostrar ? 'text' : 'password';
+
+          btn.innerHTML = mostrar
+            ? '<i data-lucide="eye-off" class="w-5 h-5"></i>'
+            : '<i data-lucide="eye" class="w-5 h-5"></i>';
+
+          if (window.lucide) {
+            window.lucide.createIcons();
+          }
+        });
+      }
+    });
+  </script>
+
+  <script type="module" src="./js/login.js"></script>
+</body>
+</html>
