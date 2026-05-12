@@ -1,315 +1,1423 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Gerenciamento de Catálogo SOMAX</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>SOMAX STUDIOS — Visualização Executiva do Catálogo</title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand: '#6366f1',
-                        darkBg: '#09090b',
-                        cardBg: '#18181b',
-                    }
-                }
-            }
+  <style>
+    :root {
+      --somax-black: #0a0a0a;
+      --somax-dark: #111111;
+      --somax-card: #1a1a1a;
+      --somax-border: #2a2a2a;
+      --somax-gold: #c9a84c;
+      --somax-gold-light: #e8d48b;
+      --somax-gold-dim: #8a7234;
+      --somax-red: #e74c3c;
+      --somax-green: #2ecc71;
+      --somax-blue: #3498db;
+      --somax-orange: #e67e22;
+      --somax-purple: #9b59b6;
+      --somax-cyan: #1abc9c;
+      --somax-text: #f0f0f0;
+      --somax-text-dim: #888888;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--somax-black);
+      color: var(--somax-text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .font-display { font-family: 'Playfair Display', serif; }
+
+    .gold-gradient {
+      background: linear-gradient(135deg, var(--somax-gold-light), var(--somax-gold), var(--somax-gold-dim));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--somax-dark); }
+    ::-webkit-scrollbar-thumb { background: var(--somax-gold-dim); border-radius: 999px; }
+
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 280px;
+      height: 100vh;
+      background: var(--somax-dark);
+      border-right: 1px solid var(--somax-border);
+      z-index: 100;
+      overflow-y: auto;
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 20px;
+      color: var(--somax-text-dim);
+      text-decoration: none;
+      font-size: 0.82rem;
+      transition: all 0.2s ease;
+      border-left: 3px solid transparent;
+      cursor: pointer;
+    }
+
+    .sidebar-link:hover,
+    .sidebar-link.active {
+      color: var(--somax-gold);
+      background: rgba(201,168,76,0.06);
+      border-left-color: var(--somax-gold);
+    }
+
+    .main-content {
+      margin-left: 280px;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    .report-section {
+      padding: 3.5rem 2rem;
+      min-height: 100vh;
+      position: relative;
+      scroll-margin-top: 20px;
+    }
+
+    .section-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    .section-number {
+      font-family: 'Playfair Display', serif;
+      font-size: 5rem;
+      font-weight: 900;
+      opacity: 0.06;
+      position: absolute;
+      top: 1.5rem;
+      right: 2rem;
+      pointer-events: none;
+    }
+
+    .kpi-card {
+      background: var(--somax-card);
+      border: 1px solid var(--somax-border);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(201,168,76,0.1);
+    }
+
+    .panel {
+      background: var(--somax-card);
+      border: 1px solid var(--somax-border);
+      border-radius: 1rem;
+      padding: 1.5rem;
+    }
+
+    .progress-bar {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 999px;
+    }
+
+    .shelf-compact-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+      gap: 8px;
+    }
+
+    .shelf-mini-card {
+      background: var(--somax-dark);
+      border: 1px solid var(--somax-border);
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+      min-height: 70px;
+    }
+
+    .badge {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .badge-on { background: rgba(46,204,113,0.15); color: #2ecc71; border: 1px solid rgba(46,204,113,0.3); }
+    .badge-off { background: rgba(231,76,60,0.15); color: #e74c3c; border: 1px solid rgba(231,76,60,0.3); }
+    .badge-td { background: rgba(230,126,34,0.15); color: #e67e22; border: 1px solid rgba(230,126,34,0.3); }
+    .badge-null { background: rgba(155,155,155,0.12); color: #aaa; border: 1px solid rgba(155,155,155,0.2); }
+
+    .report-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .report-table thead th {
+      background: linear-gradient(135deg, var(--somax-gold-dim), var(--somax-gold));
+      color: var(--somax-black);
+      font-weight: 900;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      padding: 12px 14px;
+      text-align: left;
+    }
+
+    .report-table tbody td {
+      padding: 11px 14px;
+      font-size: 0.84rem;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      vertical-align: top;
+    }
+
+    .input-field {
+      background: var(--somax-black);
+      border: 1px solid var(--somax-border);
+      color: var(--somax-text);
+      padding: 10px 14px;
+      border-radius: 0.5rem;
+      outline: none;
+      width: 100%;
+    }
+
+    .input-field:focus { border-color: var(--somax-gold); }
+
+    .pagination button {
+      background: var(--somax-card);
+      border: 1px solid var(--somax-border);
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.5rem;
+      color: var(--somax-text);
+      transition: all 0.2s;
+      font-size: 0.78rem;
+    }
+
+    .pagination button:hover:not(:disabled) {
+      border-color: var(--somax-gold);
+      color: var(--somax-gold);
+    }
+
+    .pagination button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .alert-card {
+      border-left: 4px solid var(--somax-red);
+      background: rgba(231,76,60,0.06);
+      padding: 1rem;
+      border-radius: 0.75rem;
+    }
+
+    .alert-card.warn {
+      border-left-color: var(--somax-orange);
+      background: rgba(230,126,34,0.06);
+    }
+
+    .alert-card.info {
+      border-left-color: var(--somax-blue);
+      background: rgba(52,152,219,0.06);
+    }
+
+    .mobile-menu {
+      display: none;
+    }
+
+    @media (max-width: 1024px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main-content { margin-left: 0; }
+      .report-section { padding: 4.5rem 1rem 2rem; }
+      .mobile-menu {
+        display: block;
+        position: fixed;
+        top: 1rem;
+        left: 1rem;
+        z-index: 200;
+      }
+    }
+
+    @media print {
+    @page {
+        size: A4;
+        margin: 8mm 8mm;
+    }
+
+    html, body {
+        width: 100% !important;
+        background: #fff !important;
+        color: #111 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        orphans: 3;
+        widows: 3;
+    }
+
+    .sidebar, .mobile-menu, #avisoModal,
+    #loadingOverlay, .no-print, .pagination,
+    button, .btn, .base-actions, .filter-area {
+        display: none !important;
+    }
+
+    .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        min-height: auto !important;
+    }
+
+    .report-section {
+        display: block !important;
+        padding: 3mm 0 !important;
+        margin: 0 !important;
+        min-height: auto !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    .report-section + .report-section {
+        page-break-before: avoid !important;
+        break-before: avoid !important;
+    }
+
+    h2, h3, .section-header {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+        page-break-before: avoid !important;
+        break-before: avoid !important;
+    }
+
+    .section-inner {
+        max-width: none !important;
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    .section-number { display: none !important; }
+
+    * {
+        box-shadow: none !important;
+        text-shadow: none !important;
+        color: #111 !important;
+        -webkit-text-fill-color: initial !important;
+    }
+
+    .gold-gradient {
+        background: none !important;
+        color: #111 !important;
+    }
+
+    .panel, .kpi-card,
+    .shelf-mini-card, .alert-card {
+        background: #fff !important;
+        border: 1px solid #d7d7d7 !important;
+        color: #111 !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    .panel { padding: 8px !important; }
+    .kpi-card { padding: 6px !important; }
+
+    .report-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        page-break-inside: auto !important;
+        table-layout: auto !important;
+    }
+
+    .report-table thead {
+        display: table-header-group !important;
+    }
+
+    .report-table tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    .report-table thead th {
+        background: #eeeeee !important;
+        color: #111 !important;
+        border: 1px solid #cfcfcf !important;
+        font-size: 8px !important;
+        padding: 4px !important;
+    }
+
+    .report-table tbody td {
+        border: 1px solid #dddddd !important;
+        font-size: 8px !important;
+        padding: 3px 4px !important;
+    }
+
+    .shelf-compact-grid {
+        grid-template-columns: repeat(8, 1fr) !important;
+        gap: 3px !important;
+    }
+
+    .shelf-mini-card {
+        min-height: auto !important;
+        padding: 4px !important;
+    }
+
+    .shelf-mini-card[data-empty="true"] {
+        display: none !important;
+    }
+
+    canvas {
+        max-height: 170px !important;
+        width: 100% !important;
+    }
+
+    body.print-resumido #sec-base,
+    body.print-resumido .lista-detalhada,
+    body.print-resumido .print-hide-resumido {
+        display: none !important;
+    }
+
+    body.print-resumido .report-section {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    body.print-completo .print-hide-resumido { display: block !important; }
+    body.print-completo #sec-base { display: block !important; }
+    body.print-completo .lista-detalhada { display: block !important; }
+
+    #sec-capa .bg-gradient-to-br {
+        background: none !important;
+        background-color: #fff !important;
+    }
+    #sec-capa .absolute { display: none !important; }
+    #sec-capa .bg-black\/40,
+    #sec-capa .bg-black\/45 {
+        background: transparent !important;
+        border: 1px solid #d7d7d7 !important;
+    }
+    #sec-capa h1, #sec-capa p,
+    #sec-capa span, #sec-capa div {
+        color: #111 !important;
+    }
+
+    /* Dentro do @media print */
+    [class*="bg-somax-"] {
+    background-color: #fff !important;
+    }
+
+    [class*="border-somax-"] {
+    border-color: #d7d7d7 !important;
+    }
+
+    [class*="text-orange-"] {
+    color: #c2590a !important;
+    }
+
+    }
+  </style>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            somax: {
+              black: '#0a0a0a',
+              dark: '#111111',
+              card: '#1a1a1a',
+              border: '#2a2a2a',
+              gold: '#c9a84c'
+            },
+            gold: '#c9a84c'
+          }
         }
-    </script>
-
-    <style>
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #09090b; }
-        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #6366f1; }
-
-        .tab-active {
-            background-color: #6366f1;
-            color: white;
-            border-color: #6366f1;
-        }
-
-        .tab-inactive {
-            background-color: transparent;
-            color: #a1a1aa;
-            border-color: #27272a;
-        }
-
-        .tab-inactive:hover {
-            color: #e4e4e7;
-            border-color: #3f3f46;
-        }
-
-        #mainTable {
-            width: 100%;
-            table-layout: fixed;
-        }
-
-        #mainTable th,
-        #mainTable td {
-            white-space: normal;
-            word-break: break-word;
-            vertical-align: top;
-        }
-
-        .mobile-card {
-            padding: 1rem;
-            background: #18181b;
-        }
-
-        .mobile-card-title {
-            font-size: 0.95rem;
-            line-height: 1.3rem;
-            font-weight: 700;
-            color: white;
-            margin-bottom: 0.75rem;
-        }
-
-        .mobile-card-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 0.5rem;
-        }
-
-        .mobile-card-row {
-            display: flex;
-            flex-direction: column;
-            gap: 0.15rem;
-        }
-
-        .mobile-card-label {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: #71717a;
-            font-weight: 600;
-        }
-
-        .mobile-card-value {
-            font-size: 0.92rem;
-            color: #d4d4d8;
-            line-height: 1.3rem;
-            word-break: break-word;
-        }
-    </style>
+      }
+    }
+  </script>
 </head>
-<body class="bg-darkBg text-zinc-300 font-sans antialiased min-h-screen selection:bg-brand selection:text-white">
 
-    <div id="avisoAcessoModal" class="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 px-4">
-        <div class="bg-cardBg border border-zinc-800 rounded-2xl shadow-2xl max-w-2xl w-full p-6">
-            <div class="flex items-start gap-4">
-                <div class="shrink-0 w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 text-xl">
-                    ⚠
-                </div>
+<body>
 
-                <div class="flex-1">
-                    <h2 class="text-xl font-bold text-white mb-2 uppercase tracking-tight">
-                        Aviso de confidencialidade
-                    </h2>
+  <button id="menuToggle" class="mobile-menu p-2 bg-somax-card border border-somax-border rounded-lg text-gold">
+    <i data-lucide="menu" class="w-5 h-5"></i>
+  </button>
 
-                    <p class="text-sm text-zinc-300 leading-relaxed mb-3">
-                        Este sistema é de uso interno da <span class="text-white font-semibold">Somax Studios</span> e destina-se exclusivamente à visualização e gestão interna de produtos do catálogo.
-                    </p>
-
-                    <p class="text-sm text-zinc-400 leading-relaxed mb-3">
-                        É proibido compartilhar este link, dados, exportações, relatórios ou qualquer informação aqui exibida com terceiros sem autorização expressa.
-                    </p>
-
-                    <p class="text-sm text-zinc-400 leading-relaxed mb-5">
-                        Somente administradores e desenvolvedores autorizados pela Somax podem conceder acesso a esta página e aos seus conteúdos.
-                    </p>
-
-                    <div class="flex flex-col sm:flex-row gap-3 sm:justify-end">
-                        <button id="btnConfirmarAviso"
-                            class="px-5 py-2.5 bg-brand hover:bg-indigo-500 text-white rounded-lg font-medium transition">
-                            Entendi e continuar
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <aside class="sidebar" id="sidebar">
+    <div class="p-6 border-b border-somax-border text-center">
+      <h1 class="font-display font-bold text-3xl gold-gradient tracking-wider">SOMAX</h1>
+      <p class="text-xs text-gray-500 mt-1 uppercase tracking-widest">Studios</p>
     </div>
 
-    <nav class="bg-cardBg border-b border-zinc-800 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16 gap-4">
-                <div class="flex flex-col leading-tight">
-                    <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white uppercase">
-                        Gerenciamento de Catálogo SOMAX
-                    </h1>
-                    <span class="text-xs text-zinc-500">
-                        Sistema interno destinado somente à visualização de produtos
-                    </span>
-                </div>
-
-                <div class="text-right hidden sm:block">
-                    <span class="text-xs text-zinc-500">
-                        © 2026 Somax Studios — Uso interno restrito
-                    </span>
-                </div>
-            </div>
-        </div>
+    <nav class="p-4 flex flex-col gap-1">
+      <a href="#sec-capa" class="sidebar-link active"><i data-lucide="book-open" class="w-4 h-4"></i> Capa</a>
+      <a href="#sec-resumo" class="sidebar-link"><i data-lucide="layout-dashboard" class="w-4 h-4"></i> Resumo Geral</a>
+      <a href="#sec-performance" class="sidebar-link"><i data-lucide="bar-chart-3" class="w-4 h-4"></i> Performance</a>
+      <a href="#sec-prateleiras" class="sidebar-link"><i data-lucide="layout-grid" class="w-4 h-4"></i> Prateleiras</a>
+      <a href="#sec-formatos" class="sidebar-link"><i data-lucide="disc-3" class="w-4 h-4"></i> Formatos</a>
+      <a href="#sec-gravadoras" class="sidebar-link"><i data-lucide="building-2" class="w-4 h-4"></i> Gravadoras</a>
+      <a href="#sec-alertas" class="sidebar-link"><i data-lucide="alert-triangle" class="w-4 h-4"></i> Pendências</a>
+      <a href="#sec-takendown" class="sidebar-link"><i data-lucide="arrow-down-circle" class="w-4 h-4"></i> Taken Down</a>
+      <a href="#sec-base" class="sidebar-link"><i data-lucide="database" class="w-4 h-4"></i> Base de Dados</a>
     </nav>
 
-    <main class="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-4 space-y-6">
+    <div class="p-4 border-t border-somax-border mt-4">
+      <p class="text-[10px] uppercase tracking-widest text-gray-600 mb-2 px-2">Exportação</p>
 
-        <div class="flex space-x-2 border-b border-zinc-800 pb-3">
-            <button id="btnTabDashboard" class="tab-active px-5 py-2 text-sm font-medium rounded-md border transition-all">
-                📊 Visão Geral (Dashboard)
+      <select id="modoImpressao" class="w-full bg-somax-card border border-somax-border rounded-lg px-3 py-2 text-xs text-gold mb-2">
+        <option value="resumido">Resumo Executivo</option>
+        <option value="completo">Relatório Completo</option>
+      </select>
+
+      <button id="btnImprimir" class="sidebar-link w-full">
+        <i data-lucide="printer" class="w-4 h-4"></i> Imprimir / PDF
+      </button>
+
+      <button id="btnAtualizarGeral" class="sidebar-link w-full mt-2">
+        <i data-lucide="refresh-cw" class="w-4 h-4"></i> Atualizar Dados
+      </button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+
+    <div id="avisoModal" class="fixed inset-0 bg-black/85 z-[400] flex items-center justify-center px-4">
+      <div class="bg-somax-card border border-somax-border rounded-2xl max-w-lg w-full p-6 shadow-2xl">
+        <div class="flex gap-4">
+          <div class="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center text-2xl">⚠️</div>
+          <div>
+            <h2 class="text-xl font-bold text-white uppercase">Aviso de confidencialidade</h2>
+            <p class="text-sm text-gray-300 mt-2">
+              Este painel contém dados internos da Somax Studios. Não compartilhe relatórios, prints ou informações com terceiros sem autorização.
+            </p>
+            <button id="fecharAviso" class="mt-4 px-4 py-2 bg-somax-gold text-black rounded-lg text-sm font-bold">
+              Entendi e continuar
             </button>
-            <button id="btnTabDados" class="tab-inactive px-5 py-2 text-sm font-medium rounded-md border transition-all">
-                📋 Base de Dados do Catálogo
-            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section id="sec-capa" class="report-section">
+      <div class="section-inner">
+        <div class="relative min-h-[92vh] overflow-hidden rounded-2xl border border-somax-border bg-gradient-to-br from-[#050505] via-[#111] to-[#050505] flex items-center justify-center text-center p-6 md:p-12">
+          <div class="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(201,168,76,0.12),transparent_45%)]"></div>
+          <div class="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(201,168,76,0.08),transparent_45%)]"></div>
+          <div class="absolute inset-0 opacity-[0.025]" style="background-image: linear-gradient(rgba(255,255,255,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.12) 1px, transparent 1px); background-size: 54px 54px;"></div>
+
+          <div class="relative z-10 max-w-5xl mx-auto">
+            <div class="mb-8 flex justify-center">
+              <div class="relative">
+                <div class="absolute inset-0 bg-gold/20 blur-3xl rounded-full"></div>
+                <div class="relative w-28 h-28 md:w-36 md:h-36 border-2 border-somax-gold rounded-3xl flex items-center justify-center rotate-45 bg-black/40 shadow-2xl">
+                  <span class="font-black gold-gradient -rotate-45 text-3xl md:text-4xl tracking-tight">SX</span>
+                </div>
+              </div>
+            </div>
+
+            <p class="text-xs md:text-sm uppercase tracking-[0.5em] text-[#8a7234] mb-4">
+              Somax Studios apresenta
+            </p>
+
+            <h1 class="font-display text-5xl md:text-7xl lg:text-8xl font-black gold-gradient leading-tight">
+              RELATÓRIO<br>EXECUTIVO
+            </h1>
+
+            <h2 class="font-display text-2xl md:text-4xl text-[#8a7234] font-light tracking-wide mt-3">
+              DO CATÁLOGO
+            </h2>
+
+            <div class="w-28 h-[2px] bg-gradient-to-r from-transparent via-gold to-transparent mx-auto my-8"></div>
+
+            <p class="text-gray-400 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
+              Painel externo de visualização do acervo Somax Studios, com indicadores consolidados,
+              gráficos de performance, status de catálogo, prateleiras, formatos, gravadoras,
+              pendências e dados atualizados diretamente do banco de dados.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-10 max-w-4xl mx-auto">
+              <div class="bg-black/45 border border-somax-border rounded-2xl p-5">
+                <p class="text-[10px] uppercase tracking-[0.25em] text-gray-500 mb-2">Total do Acervo</p>
+                <p id="capaTotal" class="text-4xl md:text-5xl font-black text-white">—</p>
+                <p class="text-[11px] text-gray-600 mt-1">registros catalogados</p>
+              </div>
+
+              <div class="bg-black/45 border border-somax-border rounded-2xl p-5">
+                <p class="text-[10px] uppercase tracking-[0.25em] text-gray-500 mb-2">Data de Geração</p>
+                <p id="dataGeracao" class="text-xl md:text-2xl font-bold text-gold">—</p>
+                <p class="text-[11px] text-gray-600 mt-1">relatório dinâmico</p>
+              </div>
+
+              <div class="bg-black/45 border border-somax-border rounded-2xl p-5">
+                <p class="text-[10px] uppercase tracking-[0.25em] text-gray-500 mb-2">Fonte dos Dados</p>
+                <p class="text-xl md:text-2xl font-bold text-white">Banco de Dados</p>
+                <p class="text-[11px] text-gray-600 mt-1">consulta em tempo real</p>
+              </div>
+            </div>
+
+            <div class="mt-10 flex flex-wrap justify-center gap-3">
+              <span class="px-4 py-2 rounded-full border border-gold/30 text-gold text-xs uppercase tracking-wider">Relatório Executivo</span>
+              <span class="px-4 py-2 rounded-full border border-somax-border text-gray-500 text-xs uppercase tracking-wider">Visualização Externa</span>
+              <span class="px-4 py-2 rounded-full border border-red-500/30 text-red-300 text-xs uppercase tracking-wider">Confidencial</span>
+              <span class="px-4 py-2 rounded-full border border-somax-border text-gray-500 text-xs uppercase tracking-wider">Somax Studios</span>
+            </div>
+
+            <div class="mt-12 flex flex-col sm:flex-row justify-center gap-3 no-print">
+              <button onclick="document.getElementById('sec-resumo').scrollIntoView({behavior:'smooth'})"
+                class="px-6 py-3 rounded-xl bg-gradient-to-r from-gold to-[#8a7234] text-black font-black hover:brightness-110 transition">
+                Ver Resumo Geral
+              </button>
+
+              <button id="btnPrintCapa"
+                class="px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-gold hover:bg-white/10 transition font-bold">
+                Exportar Relatório
+              </button>
+            </div>
+
+            <p class="text-[11px] text-gray-600 mt-10 max-w-xl mx-auto">
+              Documento de uso restrito. Não compartilhar dados, prints ou relatórios com terceiros sem autorização da Somax Studios.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sec-resumo" class="report-section">
+      <span class="section-number">02</span>
+      <div class="section-inner">
+        <div class="mb-8">
+          <p class="text-[10px] uppercase tracking-[0.3em] text-[#8a7234] mb-2">Seção 02</p>
+          <h2 class="font-display text-4xl font-bold gold-gradient">Resumo Geral</h2>
+          <p class="text-gray-500 mt-2">Indicadores principais do catálogo Somax Studios.</p>
         </div>
 
-        <div id="loader" class="py-20 text-center text-zinc-500 flex flex-col items-center gap-3">
-            <svg class="animate-spin h-8 w-8 text-brand" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <p>A sincronizar com o catálogo Somax...</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" id="kpiContainer"></div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="panel">
+            <h3 class="text-lg font-semibold text-gold mb-4 flex items-center gap-2">
+              <i data-lucide="pie-chart" class="w-5 h-5"></i> Distribuição por Status
+            </h3>
+            <canvas id="statusChart" height="220"></canvas>
+          </div>
+
+          <div class="panel">
+            <h3 class="text-lg font-semibold text-gold mb-4 flex items-center gap-2">
+              <i data-lucide="heart-pulse" class="w-5 h-5"></i> Saúde do Catálogo
+            </h3>
+            <div id="saudeMetricas" class="space-y-5"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sec-performance" class="report-section">
+      <span class="section-number">03</span>
+      <div class="section-inner">
+        <div class="mb-8">
+          <p class="text-[10px] uppercase tracking-[0.3em] text-[#8a7234] mb-2">Seção 03</p>
+          <h2 class="font-display text-4xl font-bold gold-gradient">Dashboard de Performance</h2>
+          <p class="text-gray-500 mt-2">Comparativos visuais do acervo e qualidade cadastral.</p>
         </div>
 
-        <div id="viewDashboard" class="hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div class="panel lg:col-span-2">
+            <h3 class="text-lg font-semibold text-gold mb-4">Status Geral</h3>
+            <canvas id="statusBarChart" height="130"></canvas>
+          </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="bg-cardBg p-5 rounded-xl border border-zinc-800 shadow-sm">
-                    <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Total de Obras</p>
-                    <h2 id="kpiTotal" class="text-3xl font-bold text-white mt-1">-</h2>
-                </div>
-
-                <div class="bg-cardBg p-5 rounded-xl border border-zinc-800 shadow-sm">
-                    <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wider">On Stream</p>
-                    <h2 id="kpiOnStream" class="text-3xl font-bold text-emerald-400 mt-1">-</h2>
-                </div>
-
-                <div class="bg-cardBg p-5 rounded-xl border border-zinc-800 shadow-sm">
-                    <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Off Stream</p>
-                    <h2 id="kpiOffStream" class="text-3xl font-bold text-rose-400 mt-1">-</h2>
-                </div>
-
-                <div class="bg-cardBg p-5 rounded-xl border border-zinc-800 shadow-sm">
-                    <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Prateleiras Físicas</p>
-                    <h2 id="kpiPrateleiras" class="text-3xl font-bold text-brand mt-1">-</h2>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-                <div class="bg-cardBg p-4 rounded-xl border border-zinc-800 shadow-sm flex flex-col h-[320px]">
-                    <h3 class="text-sm font-semibold text-white mb-2">Status de Stream</h3>
-                    <div class="flex-1 relative">
-                        <canvas id="chartStream"></canvas>
-                    </div>
-                </div>
-
-                <div class="bg-cardBg p-4 rounded-xl border border-zinc-800 shadow-sm flex flex-col h-[320px]">
-                    <h3 class="text-sm font-semibold text-white mb-2">Formato</h3>
-                    <div class="flex-1 relative">
-                        <canvas id="chartFormato"></canvas>
-                    </div>
-                    <p id="formatoEmptyMsg" class="text-xs text-center text-zinc-500 mt-2 hidden">
-                        Dados de formato não disponíveis
-                    </p>
-                </div>
-
-                <div class="bg-cardBg p-4 rounded-xl border border-zinc-800 shadow-sm flex flex-col h-[320px]">
-                    <h3 class="text-sm font-semibold text-white mb-2">📦 Itens por Prateleira</h3>
-                    <div id="prateleirasList" class="flex-1 overflow-y-auto space-y-2 pr-1">
-                        <div class="text-center text-zinc-500 text-sm py-4">A carregar...</div>
-                    </div>
-                    <p class="text-xs text-zinc-500 mt-2 text-center">
-                        🔍 Clique numa prateleira para ver os itens
-                    </p>
-                </div>
-            </div>
+          <div class="panel">
+            <h3 class="text-lg font-semibold text-gold mb-4">Pendências</h3>
+            <canvas id="pendenciasChart" height="220"></canvas>
+          </div>
         </div>
 
-        <div id="viewDados" class="hidden space-y-4">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="panel">
+            <h3 class="text-lg font-semibold text-gold mb-4">Top 10 Prateleiras</h3>
+            <canvas id="shelfChart" height="220"></canvas>
+          </div>
 
-            <div class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 sm:p-4">
-                <div class="flex items-start gap-3">
-                    <div class="text-amber-400 text-lg">🔒</div>
-                    <div>
-                        <h3 class="text-sm font-semibold text-amber-300 uppercase tracking-wide">
-                            Aviso sobre exportação
-                        </h3>
-                        <p class="text-sm text-zinc-300 mt-1 leading-relaxed">
-                            A exportação do catálogo gera arquivos com <span class="font-semibold text-white">dados internos e confidenciais</span>.
-                            O compartilhamento com terceiros, parceiros externos ou pessoas sem autorização formal da Somax Studios não é permitido.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-cardBg border border-zinc-800 rounded-xl p-3 sm:p-4">
-                <div class="flex flex-col md:flex-row justify-between items-center gap-3">
-                    <button id="toggleFiltersBtn" class="w-full md:w-auto flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-lg text-sm transition border border-zinc-700">
-                        <span id="filterIcon">🔽</span> Mostrar Filtros
-                    </button>
-
-                    <div class="flex gap-2 w-full md:w-auto">
-                        <button id="btnExportarCSV" class="flex-1 md:flex-none text-sm px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 rounded-lg transition">
-                            Exportar CSV
-                        </button>
-                        <button id="btnExportarPDF" class="flex-1 md:flex-none text-sm px-4 py-2 bg-brand hover:bg-indigo-500 text-white border border-brand rounded-lg transition shadow-lg shadow-brand/20">
-                            Exportar PDF
-                        </button>
-                    </div>
-                </div>
-
-                <div id="filterContent" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-4 border-t border-zinc-800 mt-3">
-                    <input type="text" id="filtroTexto" placeholder="Pesquisar Título ou Artista..." class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand outline-none">
-
-                    <select id="filtroStream" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand outline-none">
-                        <option value="">Status Stream (Todos)</option>
-                        <option value="ON">ON</option>
-                        <option value="OFF">OFF</option>
-                    </select>
-
-                    <select id="filtroPrateleira" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand outline-none">
-                        <option value="">Prateleira (Todas)</option>
-                    </select>
-
-                    <select id="filtroGravadora" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand outline-none">
-                        <option value="">Gravadora (Todas)</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="bg-cardBg border border-zinc-800 rounded-xl shadow-sm overflow-hidden">
-                
-                <div class="hidden md:block">
-                    <table class="w-full text-left border-collapse" id="mainTable">
-                        <thead class="bg-zinc-900 text-zinc-400 text-xs uppercase tracking-wider font-semibold border-b border-zinc-800">
-                            <tr>
-                                <th class="px-4 py-3 w-[30%]">Título da Obra</th>
-                                <th class="px-4 py-3 w-[24%]">Artista</th>
-                                <th class="px-4 py-3 w-[20%]">Gravadora (Label)</th>
-                                <th class="px-4 py-3 w-[14%]">Prateleira</th>
-                                <th class="px-4 py-3 w-[12%] text-center">Status Stream</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tableBody" class="text-sm divide-y divide-zinc-800/50"></tbody>
-                    </table>
-                </div>
-
-                <div id="mobileCards" class="md:hidden divide-y divide-zinc-800/50"></div>
-
-                <div id="noResults" class="hidden p-6 text-center text-zinc-500 text-sm">
-                    Nenhum registo encontrado com estes filtros.
-                </div>
-            </div>
+          <div class="panel">
+            <h3 class="text-lg font-semibold text-gold mb-4">Top Gravadoras / Labels</h3>
+            <canvas id="gravadoraChart" height="220"></canvas>
+          </div>
         </div>
-    </main>
+      </div>
+    </section>
 
-    <script type="module" src="./js/visualizacao.js"></script>
+    <section id="sec-prateleiras" class="report-section">
+      <span class="section-number">04</span>
+      <div class="section-inner">
+        <div class="mb-8">
+          <p class="text-[10px] uppercase tracking-[0.3em] text-[#8a7234] mb-2">Seção 04</p>
+          <h2 class="font-display text-4xl font-bold gold-gradient">Prateleiras</h2>
+          <p class="text-gray-500 mt-2">Distribuição física do acervo.</p>
+        </div>
+
+        <div class="panel mb-6">
+          <div class="flex flex-wrap justify-between items-center gap-3 mb-5">
+            <h3 class="text-gold font-semibold">Quantitativo por Prateleira</h3>
+            <span id="shelfResumo" class="text-xs text-gray-500">—</span>
+          </div>
+          <div id="shelfGrid" class="shelf-compact-grid"></div>
+        </div>
+
+        <div class="panel">
+          <h3 class="text-gold font-semibold mb-4">Top Prateleiras por Volume</h3>
+          <div id="topShelves" class="space-y-3"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sec-formatos" class="report-section">
+      <span class="section-number">05</span>
+      <div class="section-inner">
+        <div class="mb-8">
+          <p class="text-[10px] uppercase tracking-[0.3em] text-[#8a7234] mb-2">Seção 05</p>
+          <h2 class="font-display text-4xl font-bold gold-gradient">Formatos</h2>
+          <p class="text-gray-500 mt-2">Distribuição por tipo de mídia física.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="panel">
+            <h3 class="text-gold font-semibold mb-4">Gráfico por Formato</h3>
+            <canvas id="formatoChart" height="220"></canvas>
+          </div>
+
+          <div class="panel overflow-x-auto">
+            <h3 class="text-gold font-semibold mb-4">Detalhamento por Formato</h3>
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>Formato</th>
+                  <th>Quantidade</th>
+                  <th>%</th>
+                  <th>On</th>
+                  <th>Off</th>
+                </tr>
+              </thead>
+              <tbody id="formatoTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sec-gravadoras" class="report-section">
+      <span class="section-number">06</span>
+      <div class="section-inner">
+        <div class="mb-8">
+          <p class="text-[10px] uppercase tracking-[0.3em] text-[#8a7234] mb-2">Seção 06</p>
+          <h2 class="font-display text-4xl font-bold gold-gradient">Gravadoras / Labels</h2>
+          <p class="text-gray-500 mt-2">Distribuição do acervo por gravadora ou selo.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="panel">
+            <h3 class="text-gold font-semibold mb-4">Top Gravadoras</h3>
+            <canvas id="gravadoraBarChart" height="250"></canvas>
+          </div>
+
+          <div class="panel overflow-x-auto">
+            <h3 class="text-gold font-semibold mb-4">Ranking de Gravadoras</h3>
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>Gravadora / Label</th>
+                  <th>Quantidade</th>
+                  <th>%</th>
+                </tr>
+              </thead>
+              <tbody id="gravadoraTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sec-alertas" class="report-section">
+      <span class="section-number">07</span>
+      <div class="section-inner">
+        <div class="mb-8">
+          <p class="text-[10px] uppercase tracking-[0.3em] text-[#8a7234] mb-2">Seção 07</p>
+          <h2 class="font-display text-4xl font-bold gold-gradient">Alertas & Pendências</h2>
+          <p class="text-gray-500 mt-2">Itens com dados ausentes ou incompletos.</p>
+        </div>
+
+        <div id="alertsSummary" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8"></div>
+
+        <div class="panel mb-6 lista-detalhada print-hide-resumido">
+          <h3 class="text-red-400 font-semibold mb-4">Produtos sem artista</h3>
+          <div id="semArtistaList"></div>
+          <div class="pagination flex justify-center gap-2 mt-4" id="paginationSemArtista"></div>
+        </div>
+
+        <div class="panel mb-6 lista-detalhada print-hide-resumido">
+          <h3 class="text-orange-400 font-semibold mb-4">Produtos sem prateleira</h3>
+          <div id="semPrateleiraList"></div>
+          <div class="pagination flex justify-center gap-2 mt-4" id="paginationSemPrateleira"></div>
+        </div>
+
+        <div class="panel lista-detalhada print-hide-resumido">
+          <h3 class="text-purple-400 font-semibold mb-4">Produtos sem identificação</h3>
+          <div id="semIdentList"></div>
+          <div class="pagination flex justify-center gap-2 mt-4" id="paginationSemIdent"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sec-takendown" class="report-section">
+      <span class="section-number">08</span>
+      <div class="section-inner">
+        <div class="mb-8">
+          <p class="text-[10px] uppercase tracking-[0.3em] text-[#8a7234] mb-2">Seção 08</p>
+          <h2 class="font-display text-4xl font-bold gold-gradient">Taken Down</h2>
+          <p class="text-gray-500 mt-2">Produtos removidos ou marcados como taken down.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="kpi-card text-center">
+            <span class="text-4xl font-bold text-orange-400" id="tdTotal">0</span>
+            <p class="text-xs uppercase text-gray-500 mt-2">Total Taken Down</p>
+          </div>
+          <div class="kpi-card text-center">
+            <span class="text-4xl font-bold text-gold" id="tdPercent">0%</span>
+            <p class="text-xs uppercase text-gray-500 mt-2">% do catálogo</p>
+          </div>
+          <div class="kpi-card text-center">
+            <span class="text-4xl font-bold text-white" id="tdFormatoPrincipal">—</span>
+            <p class="text-xs uppercase text-gray-500 mt-2">Formato mais afetado</p>
+          </div>
+        </div>
+
+        <div class="panel mb-6">
+          <h3 class="text-orange-400 font-semibold mb-4">Taken Down por Formato</h3>
+          <div id="tdFormatoCards" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+        </div>
+
+        <div class="panel lista-detalhada print-hide-resumido">
+          <h3 class="text-orange-400 font-semibold mb-4">Lista de produtos Taken Down</h3>
+          <div id="tdList"></div>
+          <div class="pagination flex justify-center gap-2 mt-4" id="paginationTD"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sec-base" class="report-section">
+      <span class="section-number">09</span>
+      <div class="section-inner">
+        <div class="mb-6 flex flex-wrap justify-between items-center gap-4">
+          <div>
+            <p class="text-[10px] uppercase tracking-[0.3em] text-[#8a7234] mb-2">Seção 09</p>
+            <h2 class="font-display text-4xl font-bold gold-gradient">Base de Dados</h2>
+            <p class="text-gray-500 mt-2">Consulta pública controlada do catálogo.</p>
+          </div>
+
+          <div class="flex gap-2 base-actions">
+            <button id="btnExportCSV" class="px-4 py-2 bg-somax-card border border-somax-border rounded-lg text-sm hover:border-gold">CSV</button>
+            <button id="btnExportPDF" class="px-4 py-2 bg-somax-card border border-somax-border rounded-lg text-sm hover:border-gold">PDF</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 filter-area">
+          <input type="text" id="filtroTexto" placeholder="Buscar título, artista..." class="input-field">
+          <select id="filtroStream" class="input-field">
+            <option value="">Todos os status</option>
+            <option value="On">ON</option>
+            <option value="Off">OFF</option>
+            <option value="Taken Down">TAKEN DOWN</option>
+          </select>
+          <select id="filtroPrateleira" class="input-field">
+            <option value="">Todas prateleiras</option>
+          </select>
+          <select id="filtroFormato" class="input-field">
+            <option value="">Todos formatos</option>
+          </select>
+        </div>
+
+        <div class="panel overflow-hidden overflow-x-auto">
+          <table class="report-table w-full">
+            <thead>
+              <tr>
+                <th>Título</th>
+                <th>Artista</th>
+                <th>Gravadora</th>
+                <th>Prateleira</th>
+                <th>Formato</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaDadosBody"></tbody>
+          </table>
+        </div>
+
+        <div class="pagination flex justify-center gap-2 mt-6" id="paginationDados"></div>
+        <div class="text-center text-gray-500 text-xs mt-4">
+          Exibindo <span id="infoRange">—</span> de <span id="totalFiltrados">—</span> registros
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="loadingOverlay" class="fixed inset-0 bg-black/90 z-[500] flex items-center justify-center">
+    <div class="text-center">
+      <i data-lucide="loader-2" class="animate-spin w-12 h-12 text-gold mx-auto mb-4"></i>
+      <p class="text-white">Carregando dados do Banco de Dados...</p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+    const supabaseUrl = 'https://ulbqzvztwrqmaxbzsmmv.supabase.co';
+    const supabaseKey = 'sb_publishable_shOmcA8udv3Tw0xKYzafAw_s1YXgbDk';
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    let catalogo = [];
+    let dadosFiltrados = [];
+    let dadosPage = 1;
+    let statusChart, formatoChart, statusBarChart, pendenciasChart, shelfChart, gravadoraChart, gravadoraBarChart;
+
+    const $ = id => document.getElementById(id);
+    const norm = v => (v ?? '').toString().trim();
+    const lower = v => norm(v).toLowerCase();
+    const num = v => Number(v || 0).toLocaleString('pt-BR');
+    const pct = (v, t) => !t ? '0%' : `${((v / t) * 100).toFixed(1).replace('.', ',')}%`;
+    const isEmpty = v => {
+      const s = lower(v);
+      return !s || s === '-' || s === 'null' || s === 'undefined' || s === 'sem identificação' || s === 'sem identificacao';
+    };
+
+    function escapeHtml(v) {
+      return String(v ?? '').replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+      }[m]));
+    }
+
+    function countBy(arr, field, fallback = 'Não informado') {
+      const map = new Map();
+      arr.forEach(item => {
+        const key = norm(item[field]) || fallback;
+        map.set(key, (map.get(key) || 0) + 1);
+      });
+      return [...map.entries()].sort((a, b) => b[1] - a[1]);
+    }
+
+    function getStatus(item) {
+      const s = lower(item.stream_status);
+      if (s === 'on') return 'On';
+      if (s === 'off') return 'Off';
+      if (s === 'taken down') return 'Taken Down';
+      return norm(item.stream_status) || 'Não informado';
+    }
+
+    function statusBadge(status) {
+      const s = lower(status);
+      if (s === 'on') return `<span class="badge badge-on">On</span>`;
+      if (s === 'off') return `<span class="badge badge-off">Off</span>`;
+      if (s === 'taken down') return `<span class="badge badge-td">Taken Down</span>`;
+      return `<span class="badge badge-null">${escapeHtml(status || '-')}</span>`;
+    }
+
+    function stats() {
+      const total = catalogo.length;
+      const on = catalogo.filter(i => lower(i.stream_status) === 'on').length;
+      const off = catalogo.filter(i => lower(i.stream_status) === 'off').length;
+      const td = catalogo.filter(i => lower(i.stream_status) === 'taken down' || i.taken_down === true).length;
+      const semArtista = catalogo.filter(i => isEmpty(i.artista)).length;
+      const semTitulo = catalogo.filter(i => isEmpty(i.titulo)).length;
+      const semPrateleira = catalogo.filter(i => isEmpty(i.prateleira)).length;
+      const semFormato = catalogo.filter(i => isEmpty(i.formato)).length;
+      const semNumero = catalogo.filter(i => isEmpty(i.numero)).length;
+      const pendencias = catalogo.filter(i => isEmpty(i.artista) || isEmpty(i.titulo) || isEmpty(i.prateleira) || isEmpty(i.formato) || isEmpty(i.numero)).length;
+
+      return { total, on, off, td, semArtista, semTitulo, semPrateleira, semFormato, semNumero, pendencias };
+    }
+
+    function paginateArray(arr, page, perPage = 25) {
+      return arr.slice((page - 1) * perPage, page * perPage);
+    }
+
+    function renderPagination(totalItems, perPage, currentPage, callback, containerId) {
+      const totalPages = Math.ceil(totalItems / perPage);
+      const container = $(containerId);
+      if (!container) return;
+      if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+      }
+
+      const maxButtons = 7;
+      let start = Math.max(1, currentPage - 3);
+      let end = Math.min(totalPages, start + maxButtons - 1);
+      if (end - start < maxButtons - 1) start = Math.max(1, end - maxButtons + 1);
+
+      let html = `<button ${currentPage === 1 ? 'disabled' : ''} data-page="${currentPage - 1}">◀</button>`;
+      for (let i = start; i <= end; i++) {
+        html += `<button class="${i === currentPage ? 'border-gold text-gold' : ''}" data-page="${i}">${i}</button>`;
+      }
+      html += `<button ${currentPage === totalPages ? 'disabled' : ''} data-page="${currentPage + 1}">▶</button>`;
+
+      container.innerHTML = html;
+      container.querySelectorAll('button[data-page]').forEach(btn => {
+        btn.addEventListener('click', () => callback(parseInt(btn.dataset.page, 10)));
+      });
+    }
+
+    async function carregarDados() {
+      $('loadingOverlay').style.display = 'flex';
+
+      let all = [];
+      let start = 0;
+      const limit = 1000;
+
+      while (true) {
+        const { data, error } = await supabase
+          .from('catalogo')
+          .select('*')
+          .range(start, start + limit - 1);
+
+        if (error) {
+          console.error(error);
+          $('loadingOverlay').style.display = 'none';
+          alert('Erro ao carregar dados do catálogo.');
+          return;
+        }
+
+        if (!data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < limit) break;
+        start += limit;
+      }
+
+      catalogo = all;
+      $('loadingOverlay').style.display = 'none';
+      atualizarTudo();
+    }
+
+    function atualizarTudo() {
+      const s = stats();
+
+      $('capaTotal').innerText = num(s.total);
+      $('dataGeracao').innerText = new Date().toLocaleString('pt-BR');
+
+      atualizarResumo(s);
+      atualizarPerformance(s);
+      atualizarPrateleiras();
+      atualizarFormatos();
+      atualizarGravadoras();
+      atualizarAlertas(s);
+      atualizarTakenDown(s);
+      prepararFiltros();
+      atualizarBaseDados();
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function atualizarResumo(s) {
+      $('kpiContainer').innerHTML = `
+        <div class="kpi-card"><div class="flex justify-between text-gray-500"><span>Total</span><i data-lucide="database"></i></div><p class="text-4xl font-black mt-3">${num(s.total)}</p><p class="text-xs text-gray-500 mt-1">itens no catálogo</p></div>
+        <div class="kpi-card"><div class="flex justify-between text-gray-500"><span>On Stream</span><i data-lucide="play-circle" class="text-green-400"></i></div><p class="text-4xl font-black mt-3 text-green-400">${num(s.on)}</p><p class="text-xs text-gray-500 mt-1">${pct(s.on, s.total)} do catálogo</p></div>
+        <div class="kpi-card"><div class="flex justify-between text-gray-500"><span>Off Stream</span><i data-lucide="pause-circle" class="text-red-400"></i></div><p class="text-4xl font-black mt-3 text-red-400">${num(s.off)}</p><p class="text-xs text-gray-500 mt-1">${pct(s.off, s.total)} do catálogo</p></div>
+        <div class="kpi-card"><div class="flex justify-between text-gray-500"><span>Pendências</span><i data-lucide="alert-circle" class="text-orange-400"></i></div><p class="text-4xl font-black mt-3 text-orange-400">${num(s.pendencias)}</p><p class="text-xs text-gray-500 mt-1">${pct(s.pendencias, s.total)} com revisão</p></div>
+      `;
+
+      const completude = s.total ? Math.max(0, 100 - ((s.pendencias / s.total) * 100)) : 0;
+      const comArtista = s.total ? ((s.total - s.semArtista) / s.total) * 100 : 0;
+      const comPrateleira = s.total ? ((s.total - s.semPrateleira) / s.total) * 100 : 0;
+
+      $('saudeMetricas').innerHTML = [
+        ['Completude geral', completude, 'bg-gold'],
+        ['On Stream Rate', s.total ? (s.on / s.total) * 100 : 0, 'bg-green-400'],
+        ['Produtos com artista', comArtista, 'bg-purple-400'],
+        ['Produtos com prateleira', comPrateleira, 'bg-blue-400']
+      ].map(([label, value, color]) => `
+        <div>
+          <div class="flex justify-between text-sm mb-1">
+            <span class="text-gray-400">${label}</span>
+            <span class="font-bold text-gold">${value.toFixed(1).replace('.', ',')}%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill ${color}" style="width:${value}%"></div></div>
+        </div>
+      `).join('');
+
+      chart('statusChart', 'doughnut', ['On', 'Off', 'Taken Down'], [s.on, s.off, s.td], ['#2ecc71', '#e74c3c', '#e67e22']);
+    }
+
+    function atualizarPerformance(s) {
+      chart('statusBarChart', 'bar', ['On', 'Off', 'Taken Down', 'Pendências'], [s.on, s.off, s.td, s.pendencias], ['#2ecc71', '#e74c3c', '#e67e22', '#9b59b6']);
+      chart('pendenciasChart', 'doughnut', ['Sem artista', 'Sem título', 'Sem prateleira', 'Sem formato', 'Sem nº'], [s.semArtista, s.semTitulo, s.semPrateleira, s.semFormato, s.semNumero], ['#e74c3c', '#e67e22', '#3498db', '#9b59b6', '#c9a84c']);
+
+      const topShelves = countBy(catalogo.filter(i => !isEmpty(i.prateleira)), 'prateleira').slice(0, 10);
+      chart('shelfChart', 'bar', topShelves.map(i => i[0]), topShelves.map(i => i[1]), '#c9a84c');
+
+      const topGrav = countBy(catalogo.filter(i => !isEmpty(i.gravadora)), 'gravadora').slice(0, 10);
+      chart('gravadoraChart', 'bar', topGrav.map(i => i[0]), topGrav.map(i => i[1]), '#3498db');
+    }
+
+    function atualizarPrateleiras() {
+      const entries = countBy(catalogo.filter(i => !isEmpty(i.prateleira)), 'prateleira');
+      $('shelfResumo').innerText = `${entries.length} prateleiras com itens`;
+
+      $('shelfGrid').innerHTML = entries.map(([shelf, total]) => `
+        <div class="shelf-mini-card" data-empty="${total > 0 ? 'false' : 'true'}">
+          <p class="text-gold font-bold">${escapeHtml(shelf)}</p>
+          <p class="text-2xl font-black">${num(total)}</p>
+          <p class="text-[10px] text-gray-500">itens</p>
+        </div>
+      `).join('');
+
+      const max = entries[0]?.[1] || 1;
+      $('topShelves').innerHTML = entries.slice(0, 12).map(([shelf, total]) => `
+        <div>
+          <div class="flex justify-between text-sm mb-1">
+            <span class="text-gray-400">Prateleira ${escapeHtml(shelf)}</span>
+            <span class="text-gold font-bold">${num(total)}</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill bg-gold" style="width:${(total / max) * 100}%"></div></div>
+        </div>
+      `).join('');
+    }
+
+    function atualizarFormatos() {
+      const entries = countBy(catalogo, 'formato');
+      chart('formatoChart', 'bar', entries.map(e => e[0]), entries.map(e => e[1]), '#c9a84c');
+
+      $('formatoTable').innerHTML = entries.map(([formato, total]) => {
+        const itens = catalogo.filter(i => (norm(i.formato) || 'Não informado') === formato);
+        const on = itens.filter(i => lower(i.stream_status) === 'on').length;
+        const off = itens.filter(i => lower(i.stream_status) === 'off').length;
+        return `<tr><td>${escapeHtml(formato)}</td><td>${num(total)}</td><td>${pct(total, catalogo.length)}</td><td>${num(on)}</td><td>${num(off)}</td></tr>`;
+      }).join('');
+    }
+
+    function atualizarGravadoras() {
+      const entries = countBy(catalogo, 'gravadora').slice(0, 20);
+      chart('gravadoraBarChart', 'bar', entries.slice(0, 10).map(e => e[0]), entries.slice(0, 10).map(e => e[1]), '#3498db');
+
+      $('gravadoraTable').innerHTML = entries.map(([nome, total]) => `
+        <tr><td>${escapeHtml(nome)}</td><td>${num(total)}</td><td>${pct(total, catalogo.length)}</td></tr>
+      `).join('');
+    }
+
+    function atualizarAlertas(s) {
+      const semArtista = catalogo.filter(i => isEmpty(i.artista));
+      const semPrateleira = catalogo.filter(i => isEmpty(i.prateleira));
+      const semIdent = catalogo.filter(i => isEmpty(i.titulo) || isEmpty(i.artista));
+
+      $('alertsSummary').innerHTML = `
+        <div class="alert-card text-center"><p class="text-3xl font-black text-red-400">${num(s.semArtista)}</p><p class="text-xs uppercase text-gray-500">Sem artista</p></div>
+        <div class="alert-card warn text-center"><p class="text-3xl font-black text-orange-400">${num(s.semPrateleira)}</p><p class="text-xs uppercase text-gray-500">Sem prateleira</p></div>
+        <div class="alert-card info text-center"><p class="text-3xl font-black text-blue-400">${num(s.semFormato)}</p><p class="text-xs uppercase text-gray-500">Sem formato</p></div>
+        <div class="alert-card text-center"><p class="text-3xl font-black text-purple-400">${num(semIdent.length)}</p><p class="text-xs uppercase text-gray-500">Sem identificação</p></div>
+      `;
+
+      renderTablePaginated(semArtista, 1, 'semArtistaList', 'paginationSemArtista', ['Título','Artista','Prateleira'], i => [i.titulo || '-', i.artista || '-', i.prateleira || '-']);
+      renderTablePaginated(semPrateleira, 1, 'semPrateleiraList', 'paginationSemPrateleira', ['Título','Artista','Formato'], i => [i.titulo || '-', i.artista || '-', i.formato || '-']);
+      renderTablePaginated(semIdent, 1, 'semIdentList', 'paginationSemIdent', ['ID','Título','Artista'], i => [i.id, i.titulo || '-', i.artista || '-']);
+    }
+
+    function atualizarTakenDown(s) {
+      const tdItems = catalogo.filter(i => lower(i.stream_status) === 'taken down' || i.taken_down === true);
+      $('tdTotal').innerText = num(tdItems.length);
+      $('tdPercent').innerText = pct(tdItems.length, catalogo.length);
+
+      const porFormato = countBy(tdItems, 'formato');
+      $('tdFormatoPrincipal').innerText = porFormato[0]?.[0] || '—';
+
+      $('tdFormatoCards').innerHTML = porFormato.slice(0, 8).map(([formato, total]) => `
+        <div class="bg-somax-dark border border-somax-border rounded-lg p-3 text-center">
+          <p class="text-xl font-bold text-orange-400">${num(total)}</p>
+          <p class="text-[10px] uppercase text-gray-500">${escapeHtml(formato)}</p>
+        </div>
+      `).join('');
+
+      renderTablePaginated(tdItems, 1, 'tdList', 'paginationTD', ['Título','Artista','Prateleira','Formato'], i => [i.titulo || '-', i.artista || '-', i.prateleira || '-', i.formato || '-']);
+    }
+
+    function renderTablePaginated(data, page, listId, paginationId, headers, mapper) {
+      const perPage = 25;
+      const paginated = paginateArray(data, page, perPage);
+      $(listId).innerHTML = `
+        <div class="overflow-x-auto">
+          <table class="report-table">
+            <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+            <tbody>${paginated.map(item => `<tr>${mapper(item).map(c => `<td>${escapeHtml(c)}</td>`).join('')}</tr>`).join('')}</tbody>
+          </table>
+        </div>
+      `;
+      renderPagination(data.length, perPage, page, p => renderTablePaginated(data, p, listId, paginationId, headers, mapper), paginationId);
+    }
+
+    function prepararFiltros() {
+      const prats = [...new Set(catalogo.map(p => norm(p.prateleira)).filter(Boolean))].sort();
+      const formatos = [...new Set(catalogo.map(p => norm(p.formato)).filter(Boolean))].sort();
+
+      $('filtroPrateleira').innerHTML = '<option value="">Todas prateleiras</option>' + prats.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+      $('filtroFormato').innerHTML = '<option value="">Todos formatos</option>' + formatos.map(f => `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`).join('');
+    }
+
+    function atualizarBaseDados() {
+      const texto = lower($('filtroTexto').value);
+      const stream = lower($('filtroStream').value);
+      const prateleira = norm($('filtroPrateleira').value);
+      const formato = norm($('filtroFormato').value);
+
+      dadosFiltrados = catalogo.filter(p => {
+        const matchText = !texto || lower(p.titulo).includes(texto) || lower(p.artista).includes(texto) || lower(p.gravadora).includes(texto);
+        const matchStream = !stream || lower(p.stream_status) === stream;
+        const matchPrateleira = !prateleira || norm(p.prateleira) === prateleira;
+        const matchFormato = !formato || norm(p.formato) === formato;
+        return matchText && matchStream && matchPrateleira && matchFormato;
+      });
+
+      $('totalFiltrados').innerText = num(dadosFiltrados.length);
+      renderDadosPagina();
+    }
+
+    function renderDadosPagina() {
+      const perPage = 25;
+      const paginated = paginateArray(dadosFiltrados, dadosPage, perPage);
+
+      $('tabelaDadosBody').innerHTML = paginated.map(p => `
+        <tr>
+          <td>${escapeHtml(p.titulo || '-')}</td>
+          <td>${escapeHtml(p.artista || '-')}</td>
+          <td>${escapeHtml(p.gravadora || '-')}</td>
+          <td>${escapeHtml(p.prateleira || '-')}</td>
+          <td>${escapeHtml(p.formato || '-')}</td>
+          <td>${statusBadge(getStatus(p))}</td>
+        </tr>
+      `).join('');
+
+      const start = dadosFiltrados.length ? ((dadosPage - 1) * perPage + 1) : 0;
+      const end = Math.min(dadosPage * perPage, dadosFiltrados.length);
+      $('infoRange').innerText = `${num(start)} - ${num(end)}`;
+
+      renderPagination(dadosFiltrados.length, perPage, dadosPage, p => {
+        dadosPage = p;
+        renderDadosPagina();
+      }, 'paginationDados');
+    }
+
+    function chart(id, type, labels, data, colors) {
+      const ctx = $(id);
+      if (!ctx) return;
+
+      const existing = Chart.getChart(ctx);
+      if (existing) existing.destroy();
+
+      new Chart(ctx, {
+        type,
+        data: {
+          labels,
+          datasets: [{
+            data,
+            backgroundColor: Array.isArray(colors) ? colors : labels.map(() => colors),
+            borderWidth: 0,
+            label: 'Quantidade'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: {
+              position: type === 'doughnut' ? 'bottom' : 'top',
+              labels: { color: '#ccc' }
+            }
+          },
+          scales: type === 'bar' ? {
+            x: { ticks: { color: '#aaa' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            y: { ticks: { color: '#aaa' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+          } : {}
+        }
+      });
+    }
+
+    function aplicarModoImpressao(modoForcado = null) {
+      const modoSelect = $('modoImpressao');
+      const modo = modoForcado || (modoSelect ? modoSelect.value : 'resumido');
+      const classe = modo === 'completo' ? 'print-completo' : 'print-resumido';
+
+      document.body.classList.remove('print-resumido', 'print-completo');
+      document.documentElement.classList.remove('print-resumido', 'print-completo');
+
+      document.body.classList.add(classe);
+      document.documentElement.classList.add(classe);
+
+      document.body.dataset.printMode = modo;
+      document.documentElement.dataset.printMode = modo;
+
+      return modo;
+    }
+
+    function limparModoImpressao() {
+      document.body.classList.remove('print-resumido', 'print-completo');
+      document.documentElement.classList.remove('print-resumido', 'print-completo');
+      delete document.body.dataset.printMode;
+      delete document.documentElement.dataset.printMode;
+    }
+
+    function imprimirRelatorio(modo = null) {
+      aplicarModoImpressao(modo);
+
+      setTimeout(() => {
+        window.print();
+      }, 250);
+    }
+
+    function exportarPDF(tipo = 'resumido') {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'landscape' });
+      const s = stats();
+
+      doc.setFontSize(16);
+      doc.text(`Somax Studios - Relatório ${tipo === 'completo' ? 'Completo' : 'Resumo Executivo'}`, 14, 12);
+      doc.setFontSize(9);
+      doc.text(`Gerado em ${new Date().toLocaleString('pt-BR')}`, 14, 18);
+
+      doc.autoTable({
+        startY: 25,
+        head: [['Indicador', 'Quantidade', 'Percentual']],
+        body: [
+          ['Total do acervo', num(s.total), '100%'],
+          ['On Stream', num(s.on), pct(s.on, s.total)],
+          ['Off Stream', num(s.off), pct(s.off, s.total)],
+          ['Taken Down', num(s.td), pct(s.td, s.total)],
+          ['Pendências', num(s.pendencias), pct(s.pendencias, s.total)],
+          ['Sem artista', num(s.semArtista), pct(s.semArtista, s.total)],
+          ['Sem prateleira', num(s.semPrateleira), pct(s.semPrateleira, s.total)],
+          ['Sem formato', num(s.semFormato), pct(s.semFormato, s.total)]
+        ]
+      });
+
+      doc.autoTable({
+        startY: doc.lastAutoTable.finalY + 8,
+        head: [['Formato', 'Quantidade', '%']],
+        body: countBy(catalogo, 'formato').slice(0, 20).map(([f, q]) => [f, num(q), pct(q, s.total)])
+      });
+
+      doc.autoTable({
+        startY: doc.lastAutoTable.finalY + 8,
+        head: [['Gravadora / Label', 'Quantidade', '%']],
+        body: countBy(catalogo, 'gravadora').slice(0, 20).map(([g, q]) => [g, num(q), pct(q, s.total)])
+      });
+
+      if (tipo === 'completo') {
+        doc.addPage();
+        doc.autoTable({
+          startY: 15,
+          head: [['Título', 'Artista', 'Gravadora', 'Prateleira', 'Formato', 'Status']],
+          body: catalogo.map(p => [
+            p.titulo || '',
+            p.artista || '',
+            p.gravadora || '',
+            p.prateleira || '',
+            p.formato || '',
+            p.stream_status || ''
+          ])
+        });
+      }
+
+      doc.save(`somax_relatorio_${tipo}_${new Date().toISOString().slice(0,10)}.pdf`);
+    }
+
+    function configurarEventos() {
+      $('menuToggle').addEventListener('click', () => $('sidebar').classList.toggle('open'));
+      $('fecharAviso').addEventListener('click', () => $('avisoModal').style.display = 'none');
+
+      document.querySelectorAll('.sidebar-link[href^="#"]').forEach(link => {
+        link.addEventListener('click', () => {
+          if (window.innerWidth <= 1024) $('sidebar').classList.remove('open');
+        });
+      });
+
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            document.querySelectorAll('.sidebar-link[href^="#"]').forEach(link => {
+              link.classList.toggle('active', link.getAttribute('href') === `#${entry.target.id}`);
+            });
+          }
+        });
+      }, { threshold: 0.35 });
+
+      document.querySelectorAll('.report-section').forEach(sec => observer.observe(sec));
+
+      $('btnAtualizarGeral').addEventListener('click', carregarDados);
+      $('btnPrintCapa').addEventListener('click', () => {
+        imprimirRelatorio('completo');
+      });
+
+      $('btnImprimir').addEventListener('click', () => {
+        imprimirRelatorio($('modoImpressao').value);
+      });
+
+      $('modoImpressao').addEventListener('change', () => aplicarModoImpressao($('modoImpressao').value));
+      window.addEventListener('beforeprint', () => aplicarModoImpressao($('modoImpressao').value));
+      window.addEventListener('afterprint', limparModoImpressao);
+
+      $('btnExportCSV').addEventListener('click', () => {
+        const csv = 'Título,Artista,Gravadora,Prateleira,Formato,Status\n' + dadosFiltrados.map(p =>
+          `"${String(p.titulo || '').replace(/"/g,'""')}","${String(p.artista || '').replace(/"/g,'""')}","${String(p.gravadora || '').replace(/"/g,'""')}","${String(p.prateleira || '').replace(/"/g,'""')}","${String(p.formato || '').replace(/"/g,'""')}","${String(p.stream_status || '').replace(/"/g,'""')}"`
+        ).join('\n');
+        const blob = new Blob(["\uFEFF" + csv], {type: "text/csv;charset=utf-8;"});
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = "catalogo_somax.csv";
+        link.click();
+        URL.revokeObjectURL(link.href);
+      });
+
+      $('btnExportPDF').addEventListener('click', () => exportarPDF('completo'));
+
+      ['filtroTexto', 'filtroStream', 'filtroPrateleira', 'filtroFormato'].forEach(id => {
+        $(id).addEventListener('input', () => {
+          dadosPage = 1;
+          atualizarBaseDados();
+        });
+        $(id).addEventListener('change', () => {
+          dadosPage = 1;
+          atualizarBaseDados();
+        });
+      });
+    }
+
+    configurarEventos();
+    aplicarModoImpressao('resumido');
+    carregarDados();
+  </script>
 </body>
 </html>
