@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
+  <title>SOMAX STUDIOS — Off Stream Mobile</title>
+
+  <!-- Tailwind + Fonts + Lucide + jsPDF + autoTable -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0a0a;
+      color: #f0f0f0;
+      -webkit-font-smoothing: antialiased;
+    }
+    .bg-card {
+      background: #111111;
+      border: 1px solid #2a2a2a;
+    }
+    .gold-gradient {
+      background: linear-gradient(135deg, #e8d48b, #c9a84c, #8a7234);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .badge-off {
+      background: rgba(231,76,60,0.15);
+      color: #e74c3c;
+      border: 1px solid rgba(231,76,60,0.3);
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .filter-select, .search-input {
+      background: #0f0f0f;
+      border: 1px solid #2a2a2a;
+      border-radius: 0.75rem;
+      padding: 0.6rem 0.9rem;
+      color: white;
+      outline: none;
+      width: 100%;
+      font-size: 0.85rem;
+    }
+    .filter-select:focus, .search-input:focus {
+      border-color: #c9a84c;
+      box-shadow: 0 0 0 2px rgba(201,168,76,0.2);
+    }
+    /* Tabela responsiva com scroll horizontal */
+    .table-wrapper {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .data-table {
+      min-width: 700px;
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    .data-table thead th {
+      background: #1a1a1a;
+      color: #c9a84c;
+      font-weight: 600;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 10px 8px;
+      border-bottom: 1px solid #2e2e2e;
+      text-align: left;
+    }
+    .data-table tbody td {
+      padding: 10px 8px;
+      font-size: 0.8rem;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      vertical-align: middle;
+    }
+    .pagination {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+    }
+    .pagination button {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      padding: 6px 12px;
+      border-radius: 8px;
+      color: #e0e0e0;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .pagination button.active {
+      background: #c9a84c;
+      color: #0a0a0a;
+      border-color: #c9a84c;
+    }
+    .pagination button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    /* Cards de métricas mobile-friendly */
+    .metric-card {
+      background: #111111;
+      border: 1px solid #2a2a2a;
+      border-radius: 1rem;
+      padding: 1rem;
+      text-align: center;
+    }
+    /* stats shelf */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    @media (min-width: 640px) {
+      .stats-grid {
+        grid-template-columns: repeat(5, 1fr);
+      }
+      .data-table thead th {
+        padding: 12px 12px;
+        font-size: 0.75rem;
+      }
+      .data-table tbody td {
+        padding: 12px 12px;
+        font-size: 0.85rem;
+      }
+    }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: #111; }
+    ::-webkit-scrollbar-thumb { background: #c9a84c; border-radius: 10px; }
+  </style>
+</head>
+<body class="antialiased">
+
+  <div id="loadingOverlay" class="fixed inset-0 bg-black/95 z-[500] flex items-center justify-center backdrop-blur-sm">
+    <div class="text-center">
+      <i data-lucide="loader-2" class="animate-spin w-10 h-10 text-[#c9a84c] mx-auto mb-3"></i>
+      <p class="text-white text-xs">Carregando catálogo...</p>
+    </div>
+  </div>
+
+  <main class="max-w-full px-4 py-5 md:px-6 md:py-8">
+    <!-- Cabeçalho -->
+    <div class="flex flex-col gap-3 border-b border-[#2a2a2a] pb-5 mb-5">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-[#c9a84c]/10 flex items-center justify-center">
+            <i data-lucide="archive" class="w-4 h-4 text-[#c9a84c]"></i>
+          </div>
+          <h1 class="text-xl font-black"><span class="gold-gradient">Off Stream</span></h1>
+        </div>
+        <div class="flex gap-2 no-print">
+          <button id="btnRefresh" class="bg-[#121212] border border-[#2a2a2a] rounded-xl px-3 py-2 text-xs flex items-center gap-1">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          </button>
+          <button id="btnExportCSV" class="bg-[#121212] border border-[#2a2a2a] rounded-xl px-3 py-2 text-xs flex items-center gap-1">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i> CSV
+          </button>
+          <button id="btnExportPDF" class="bg-[#121212] border border-[#2a2a2a] rounded-xl px-3 py-2 text-xs flex items-center gap-1">
+            <i data-lucide="file-text" class="w-3.5 h-3.5"></i> PDF
+          </button>
+        </div>
+      </div>
+      <p class="text-gray-400 text-xs leading-relaxed">
+        Produtos já encontrados nas prateleiras, com status OFF (pendentes de upload).
+      </p>
+    </div>
+
+    <!-- Cards resumo (mobile otimizado) -->
+    <div class="grid grid-cols-3 gap-3 mb-5">
+      <div class="metric-card">
+        <p class="text-gray-400 text-[10px] uppercase">Total Off</p>
+        <p id="totalOffValue" class="text-2xl font-black text-red-400">0</p>
+      </div>
+      <div class="metric-card">
+        <p class="text-gray-400 text-[10px] uppercase">Prateleiras</p>
+        <p id="totalShelvesValue" class="text-2xl font-black text-[#c9a84c]">0</p>
+      </div>
+      <div class="metric-card">
+        <p class="text-gray-400 text-[10px] uppercase">Formatos</p>
+        <p id="totalFormatosValue" class="text-2xl font-black text-white">—</p>
+      </div>
+    </div>
+
+    <!-- Filtros (empilhados no mobile) -->
+    <div class="bg-card rounded-xl p-4 mb-5 space-y-3">
+      <div>
+        <label class="block text-[10px] uppercase text-gray-400 mb-1">Buscar</label>
+        <div class="relative">
+          <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500"></i>
+          <input type="text" id="searchInput" placeholder="Título ou artista" class="search-input pl-8 py-2 text-sm">
+        </div>
+      </div>
+      <div>
+        <label class="block text-[10px] uppercase text-gray-400 mb-1">Prateleira</label>
+        <select id="shelfFilter" class="filter-select py-2 text-sm"></select>
+      </div>
+      <div>
+        <label class="block text-[10px] uppercase text-gray-400 mb-1">Formato</label>
+        <select id="formatoFilter" class="filter-select py-2 text-sm"></select>
+      </div>
+      <button id="clearFilters" class="text-xs text-gray-400 hover:text-[#c9a84c] flex items-center justify-center gap-1 py-1">
+        <i data-lucide="eraser" class="w-3 h-3"></i> Limpar filtros
+      </button>
+    </div>
+
+    <!-- Painel de estatísticas da prateleira selecionada -->
+    <div id="shelfStatsPanel" class="bg-gradient-to-r from-[#0f0f0f] to-[#151515] rounded-xl border border-[#2a2a2a] p-4 mb-5 hidden">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <h3 class="text-sm font-bold gold-gradient flex items-center gap-1">
+          <i data-lucide="bar-chart-3" class="w-4 h-4"></i> Estatísticas
+        </h3>
+        <span id="shelfNameBadge" class="bg-[#c9a84c]/10 px-2 py-0.5 rounded-full text-[#c9a84c] text-xs font-mono"></span>
+      </div>
+      <div class="stats-grid">
+        <div class="bg-black/30 rounded-lg p-2 text-center">
+          <p class="text-xl font-black text-white" id="statTotal">0</p>
+          <p class="text-[9px] uppercase text-gray-400">Total OFF</p>
+        </div>
+        <div class="bg-black/30 rounded-lg p-2 text-center">
+          <p class="text-xl font-black text-orange-400" id="statSemNumero">0</p>
+          <p class="text-[9px] uppercase text-gray-400">Sem Nº</p>
+        </div>
+        <div class="bg-black/30 rounded-lg p-2 text-center">
+          <p class="text-xl font-black text-red-400" id="statSemArtista">0</p>
+          <p class="text-[9px] uppercase text-gray-400">Sem Artista</p>
+        </div>
+        <div class="bg-black/30 rounded-lg p-2 text-center">
+          <p class="text-xl font-black text-amber-400" id="statSemTitulo">0</p>
+          <p class="text-[9px] uppercase text-gray-400">Sem Título</p>
+        </div>
+        <div class="bg-black/30 rounded-lg p-2 text-center">
+          <p class="text-xl font-black text-emerald-400" id="statCompletos">0</p>
+          <p class="text-[9px] uppercase text-gray-400">Completos*</p>
+        </div>
+      </div>
+      <p class="text-[9px] text-gray-500 mt-2 text-center">*Completos = Número + Artista + Título</p>
+    </div>
+
+    <!-- Tabela com scroll horizontal -->
+    <div class="bg-card rounded-xl border border-[#2a2a2a] overflow-hidden">
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Título</th>
+              <th>Artista</th>
+              <th>Prateleira</th>
+              <th>Formato</th>
+              <th>Gravadora</th>
+              <th>Número</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr><td colspan="8" class="text-center py-8 text-gray-400 text-sm">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="flex flex-col sm:flex-row justify-between items-center gap-3 p-4 border-t border-[#2a2a2a] bg-black/20">
+        <div class="text-[11px] text-gray-400">
+          <span id="infoStart">0</span> - <span id="infoEnd">0</span> de <span id="totalFiltered">0</span>
+        </div>
+        <div class="pagination" id="paginationControls"></div>
+      </div>
+    </div>
+
+    <div class="mt-6 text-center text-[10px] text-gray-500 border-t border-[#2a2a2a] pt-4 flex justify-between">
+      <span>Somax Studios</span>
+      <span id="dataAtualizacao">—</span>
+    </div>
+  </main>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+    const supabaseUrl = 'https://ulbqzvztwrqmaxbzsmmv.supabase.co';
+    const supabaseKey = 'sb_publishable_shOmcA8udv3Tw0xKYzafAw_s1YXgbDk';
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    let todosProdutosOff = [];
+    let dadosFiltrados = [];
+    let currentPage = 1;
+    const rowsPerPage = 20;
+
+    // DOM elements
+    const loadingEl = document.getElementById('loadingOverlay');
+    const tableBody = document.getElementById('tableBody');
+    const searchInput = document.getElementById('searchInput');
+    const shelfFilter = document.getElementById('shelfFilter');
+    const formatoFilter = document.getElementById('formatoFilter');
+    const clearFiltersBtn = document.getElementById('clearFilters');
+    const btnRefresh = document.getElementById('btnRefresh');
+    const btnExportCSV = document.getElementById('btnExportCSV');
+    const btnExportPDF = document.getElementById('btnExportPDF');
+    const totalOffSpan = document.getElementById('totalOffValue');
+    const totalShelvesSpan = document.getElementById('totalShelvesValue');
+    const totalFormatosSpan = document.getElementById('totalFormatosValue');
+    const dataAtualizacaoSpan = document.getElementById('dataAtualizacao');
+    const shelfStatsPanel = document.getElementById('shelfStatsPanel');
+
+    const norm = (v) => (v ?? '').toString().trim();
+    const lower = (v) => norm(v).toLowerCase();
+    const isEmpty = (v) => {
+      const s = lower(v);
+      return !s || s === '-' || s === 'null' || s === 'undefined' || s === 'sem identificação' || s === 'sem identificacao';
+    };
+    const escapeHtml = (str) => {
+      if (!str) return '';
+      return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+    };
+
+    async function carregarCatalogo() {
+      let all = [];
+      let start = 0;
+      const limit = 1000;
+      while (true) {
+        const { data, error } = await supabase.from('catalogo').select('*').range(start, start + limit - 1);
+        if (error) throw new Error(error.message);
+        if (!data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < limit) break;
+        start += limit;
+      }
+      return all;
+    }
+
+    function filtrarProdutosOff(catalogo) {
+      return catalogo.filter(item => {
+        const status = lower(item.stream_status);
+        const shelf = norm(item.prateleira);
+        return status === 'off' && !isEmpty(shelf);
+      });
+    }
+
+    function atualizarMetricasGerais(produtos) {
+      const total = produtos.length;
+      const prats = new Set(produtos.map(p => norm(p.prateleira)).filter(Boolean));
+      const formats = new Set(produtos.map(p => norm(p.formato)).filter(f => !isEmpty(f)));
+      totalOffSpan.innerText = total.toLocaleString('pt-BR');
+      totalShelvesSpan.innerText = prats.size.toLocaleString('pt-BR');
+      totalFormatosSpan.innerText = formats.size.toLocaleString('pt-BR');
+
+      const shelfOptions = ['<option value="">Todas as prateleiras</option>'];
+      const formatoOptions = ['<option value="">Todos os formatos</option>'];
+      [...prats].sort().forEach(s => shelfOptions.push(`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`));
+      [...formats].sort().forEach(f => formatoOptions.push(`<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`));
+      shelfFilter.innerHTML = shelfOptions.join('');
+      formatoFilter.innerHTML = formatoOptions.join('');
+    }
+
+    function atualizarStatsPrateleira() {
+      const prateleiraSelecionada = norm(shelfFilter.value);
+      if (!prateleiraSelecionada) {
+        shelfStatsPanel.classList.add('hidden');
+        return;
+      }
+      const produtos = todosProdutosOff.filter(p => norm(p.prateleira) === prateleiraSelecionada);
+      const total = produtos.length;
+      const semNumero = produtos.filter(p => isEmpty(p.numero)).length;
+      const semArtista = produtos.filter(p => isEmpty(p.artista)).length;
+      const semTitulo = produtos.filter(p => isEmpty(p.titulo)).length;
+      const completos = produtos.filter(p => !isEmpty(p.numero) && !isEmpty(p.artista) && !isEmpty(p.titulo)).length;
+      document.getElementById('statTotal').innerText = total;
+      document.getElementById('statSemNumero').innerText = semNumero;
+      document.getElementById('statSemArtista').innerText = semArtista;
+      document.getElementById('statSemTitulo').innerText = semTitulo;
+      document.getElementById('statCompletos').innerText = completos;
+      document.getElementById('shelfNameBadge').innerHTML = `<i data-lucide="tag" class="inline w-3 h-3 mr-1"></i> ${escapeHtml(prateleiraSelecionada)}`;
+      shelfStatsPanel.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function aplicarFiltros() {
+      const termo = lower(searchInput.value);
+      const prateleira = norm(shelfFilter.value);
+      const formato = norm(formatoFilter.value);
+      let resultado = [...todosProdutosOff];
+      if (termo) resultado = resultado.filter(p => lower(p.titulo).includes(termo) || lower(p.artista).includes(termo));
+      if (prateleira) resultado = resultado.filter(p => norm(p.prateleira) === prateleira);
+      if (formato) resultado = resultado.filter(p => norm(p.formato) === formato);
+      dadosFiltrados = resultado;
+      currentPage = 1;
+      renderizarTabela();
+      atualizarPaginacaoInfo();
+      atualizarStatsPrateleira();
+    }
+
+    function renderizarTabela() {
+      const start = (currentPage - 1) * rowsPerPage;
+      const end = start + rowsPerPage;
+      const pagina = dadosFiltrados.slice(start, end);
+      if (!pagina.length) {
+        tableBody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-gray-400 text-sm">Nenhum produto OFF encontrado.</td></tr>`;
+        lucide.createIcons();
+        return;
+      }
+      let html = '';
+      pagina.forEach((item, idx) => {
+        const rowNum = start + idx + 1;
+        html += `
+          <tr>
+            <td class="text-gray-400 text-xs">${rowNum}</td>
+            <td class="font-medium text-sm">${escapeHtml(item.titulo || '—')}</td>
+            <td class="text-sm">${escapeHtml(item.artista || '—')}</td>
+            <td><span class="text-xs bg-[#c9a84c]/10 text-[#c9a84c] px-1.5 py-0.5 rounded">${escapeHtml(item.prateleira || '—')}</span></td>
+            <td class="text-sm">${escapeHtml(item.formato || '—')}</td>
+            <td class="text-xs text-gray-300">${escapeHtml(item.gravadora || '—')}</td>
+            <td class="text-xs text-gray-400">${escapeHtml(item.numero || '—')}</td>
+            <td><span class="badge-off">OFF</span></td>
+          </tr>
+        `;
+      });
+      tableBody.innerHTML = html;
+      lucide.createIcons();
+    }
+
+    function atualizarPaginacaoInfo() {
+      const total = dadosFiltrados.length;
+      const start = total === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
+      const end = Math.min(currentPage * rowsPerPage, total);
+      document.getElementById('infoStart').innerText = start;
+      document.getElementById('infoEnd').innerText = end;
+      document.getElementById('totalFiltered').innerText = total.toLocaleString('pt-BR');
+      const totalPages = Math.ceil(total / rowsPerPage);
+      const pagContainer = document.getElementById('paginationControls');
+      if (!pagContainer) return;
+      if (totalPages <= 1) { pagContainer.innerHTML = ''; return; }
+      let pagHtml = `<button ${currentPage === 1 ? 'disabled' : ''} data-page="${currentPage - 1}">◀</button>`;
+      let startPage = Math.max(1, currentPage - 2);
+      let endPage = Math.min(totalPages, startPage + 4);
+      if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+      for (let i = startPage; i <= endPage; i++) {
+        pagHtml += `<button data-page="${i}" class="${i === currentPage ? 'active' : ''}">${i}</button>`;
+      }
+      pagHtml += `<button ${currentPage === totalPages ? 'disabled' : ''} data-page="${currentPage + 1}">▶</button>`;
+      pagContainer.innerHTML = pagHtml;
+      pagContainer.querySelectorAll('button[data-page]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const page = parseInt(btn.dataset.page, 10);
+          if (!isNaN(page) && page >= 1 && page <= totalPages) {
+            currentPage = page;
+            renderizarTabela();
+            atualizarPaginacaoInfo();
+          }
+        });
+      });
+    }
+
+    async function exportarPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      doc.setFontSize(16);
+      doc.setTextColor(40, 40, 40);
+      doc.text('Somax Studios - Relatório de Produtos OFF', 14, 15);
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Gerado: ${new Date().toLocaleString('pt-BR')}`, 14, 22);
+      const prateleiraAtual = norm(shelfFilter.value);
+      if (prateleiraAtual) {
+        const produtos = todosProdutosOff.filter(p => norm(p.prateleira) === prateleiraAtual);
+        const semNum = produtos.filter(p => isEmpty(p.numero)).length;
+        const semArt = produtos.filter(p => isEmpty(p.artista)).length;
+        doc.text(`Prateleira: ${prateleiraAtual} | Total: ${produtos.length} | Sem Nº: ${semNum} | Sem Artista: ${semArt}`, 14, 30);
+      } else {
+        doc.text(`Total de itens OFF: ${dadosFiltrados.length} | Filtros aplicados`, 14, 30);
+      }
+      const headers = [['#', 'Título', 'Artista', 'Prateleira', 'Formato', 'Gravadora', 'Número']];
+      const body = dadosFiltrados.map((item, idx) => [idx + 1, item.titulo || '—', item.artista || '—', item.prateleira || '—', item.formato || '—', item.gravadora || '—', item.numero || '—']);
+      doc.autoTable({
+        head: headers,
+        body: body,
+        startY: 38,
+        theme: 'striped',
+        headStyles: { fillColor: [201, 168, 76], textColor: [0, 0, 0], fontStyle: 'bold' },
+        styles: { fontSize: 7, cellPadding: 2, textColor: [30, 30, 30] },
+        columnStyles: { 0: { cellWidth: 10 }, 1: { cellWidth: 40 }, 2: { cellWidth: 40 }, 3: { cellWidth: 25 }, 4: { cellWidth: 20 }, 5: { cellWidth: 35 }, 6: { cellWidth: 20 } }
+      });
+      doc.save(`somax_off_${prateleiraAtual || 'geral'}_${new Date().toISOString().slice(0, 19)}.pdf`);
+    }
+
+    function exportarCSV() {
+      if (!dadosFiltrados.length) { alert('Nenhum produto OFF para exportar.'); return; }
+      const headers = ['Prateleira', 'Título', 'Artista', 'Formato', 'Gravadora', 'Número', 'Status'];
+      const rows = dadosFiltrados.map(p => [norm(p.prateleira), p.titulo || '', p.artista || '', p.formato || '', p.gravadora || '', p.numero || '', 'OFF']);
+      const csv = [headers, ...rows].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `somax_off_${new Date().toISOString().slice(0, 19)}.csv`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    function limparFiltros() {
+      searchInput.value = '';
+      shelfFilter.value = '';
+      formatoFilter.value = '';
+      aplicarFiltros();
+    }
+
+    async function inicializar() {
+      try {
+        if (loadingEl) loadingEl.style.display = 'flex';
+        const catalogo = await carregarCatalogo();
+        todosProdutosOff = filtrarProdutosOff(catalogo);
+        atualizarMetricasGerais(todosProdutosOff);
+        dadosFiltrados = [...todosProdutosOff];
+        renderizarTabela();
+        atualizarPaginacaoInfo();
+        dataAtualizacaoSpan.innerText = `Atualizado: ${new Date().toLocaleString('pt-BR')}`;
+        aplicarFiltros(); // garante que os filtros (se houver valores) sejam aplicados
+      } catch (err) {
+        console.error(err);
+        tableBody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-red-400 text-sm">Erro: ${err.message}</td></tr>`;
+      } finally {
+        if (loadingEl) loadingEl.style.display = 'none';
+      }
+    }
+
+    function configurarEventos() {
+      searchInput.addEventListener('input', aplicarFiltros);
+      shelfFilter.addEventListener('change', aplicarFiltros);
+      formatoFilter.addEventListener('change', aplicarFiltros);
+      clearFiltersBtn.addEventListener('click', limparFiltros);
+      btnRefresh.addEventListener('click', inicializar);
+      btnExportCSV.addEventListener('click', exportarCSV);
+      btnExportPDF.addEventListener('click', exportarPDF);
+    }
+
+    configurarEventos();
+    inicializar();
+  </script>
+</body>
+</html>
