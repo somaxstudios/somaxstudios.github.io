@@ -151,7 +151,6 @@
                             <option value="TAPE">TAPE</option>
                             <option value="CD">CD</option>
                             <option value="Vinil">Vinil</option>
-                            <option value="LP">LP</option>
                             <option value="DATE">DATE</option>
                         </select>
 
@@ -195,6 +194,22 @@
                 </div>
             </div>
 
+            <div id="painelUltimoND" class="bg-zinc-900 border border-yellow-700/50 rounded-xl p-4 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div>
+                    <p class="text-xs uppercase tracking-wider text-yellow-500 font-semibold">
+                        Produtos sem identificação
+                    </p>
+                    <p class="text-zinc-300 text-sm mt-1">
+                        Último número ND cadastrado:
+                        <span id="ultimoNDInfo" class="text-yellow-400 font-bold">Carregando...</span>
+                    </p>
+                </div>
+
+                <span class="text-xs text-zinc-500">
+                    Use a próxima sequência ND ao cadastrar novo item sem identificação.
+                </span>
+            </div>
+
             <div id="noResultsMsg" class="hidden bg-red-950/30 border border-red-900/50 text-red-200 p-4 rounded-xl mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <span>Nenhum registo encontrado para a pesquisa atual.</span>
                 <button id="btnShowAddNoResults" class="w-full sm:w-auto bg-zinc-100 hover:bg-white text-zinc-900 font-bold py-2 px-6 rounded-lg transition-colors">
@@ -234,10 +249,12 @@
                         <option value="false">Não</option>
                     </select>
                 </div>
+
                 <div class="flex flex-col sm:flex-row gap-3 justify-end">
                     <button id="btnCancelar" class="px-6 py-3 rounded-lg font-semibold text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors">Cancelar</button>
                     <button id="btnSalvar" class="px-6 py-3 rounded-lg font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors shadow-lg shadow-emerald-900/20">Salvar no Catálogo</button>
                 </div>
+                
             </div>
 
             <div class="bg-transparent md:bg-labelCard md:border md:border-zinc-800 md:rounded-xl overflow-hidden md:shadow-lg">
