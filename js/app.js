@@ -1,4 +1,3 @@
-
 import { inicializarDashboard } from './dashboard.js';
 import { supabase } from './supabase-client.js';
 
@@ -23,7 +22,7 @@ const itemsPerPage = 30;
 let totalRecords = 0;
 let totalPages = 1;
 
-// Variáveis de estado para os filtros
+// Filtros
 let currentSearch = '';
 let currentFormato = '';
 let currentPrateleira = '';
@@ -32,10 +31,9 @@ let currentPodeLancar = '';
 let currentGravadora = '';
 let currentSort = 'created_desc';
 
-// Evita múltiplas execuções de salvar
 let salvandoInline = false;
 
-// --- HELPERS ---
+// Helpers
 function escapeHtml(str) {
     if (str === null || str === undefined) return '';
     return String(str).replace(/[&<>]/g, m => ({
@@ -80,7 +78,7 @@ function badgePodeLancar(valor) {
     return '<span class="bg-zinc-800 text-zinc-500 px-2 py-1 rounded-full text-xs">—</span>';
 }
 
-// --- GERAÇÃO DAS OPÇÕES DE PRATELEIRA ---
+// Prateleiras
 function gerarOpcoesPrateleiras() {
     const selectFilter = filterPrateleira;
     const selectAdd = document.getElementById('addPrateleira');
@@ -135,7 +133,7 @@ function gerarOptionsPrateleiraHTML(valorAtual) {
     return html;
 }
 
-// --- GRAVADORAS / LABELS ---
+// Gravadoras
 async function carregarOpcoesGravadoras() {
     if (!filterGravadora) return;
 
@@ -165,7 +163,7 @@ async function carregarOpcoesGravadoras() {
     });
 }
 
-// --- DASHBOARD ---
+// Dashboard
 async function carregarDashboard() {
     const { count: total } = await supabase.from('catalogo').select('*', { count: 'exact', head: true });
     document.getElementById('totalItems').innerText = total || 0;
@@ -192,12 +190,12 @@ async function carregarDashboard() {
             .from('catalogo')
             .select('titulo, artista, formato, prateleira')
             .range(inicio, inicio + step - 1);
-        
+
         if (error) {
             console.error("Erro ao carregar dados do dashboard", error);
             break;
         }
-        
+
         if (data && data.length > 0) {
             todosOsDados = todosOsDados.concat(data);
             inicio += step;
@@ -206,11 +204,11 @@ async function carregarDashboard() {
             temMaisDados = false;
         }
     }
-    
+
     inicializarDashboard(todosOsDados);
 }
 
-// --- NAVEGAÇÃO ENTRE ABAS ---
+// Navegação
 function mostrarCatalogo() {
     document.getElementById('catalogoContainer').classList.remove('hidden');
     document.getElementById('dashboardContainer').classList.add('hidden');
@@ -227,7 +225,7 @@ function mostrarDashboard() {
     carregarDashboard();
 }
 
-// --- TOTAL DE REGISTOS COM FILTROS (modificado para usar texto_busca) ---
+// Total com filtros
 async function fetchTotalCount() {
     let query = supabase.from('catalogo').select('*', { count: 'exact', head: true });
 
@@ -246,7 +244,7 @@ async function fetchTotalCount() {
     return count || 0;
 }
 
-// --- BUSCAR PRODUTOS (modificado para usar texto_busca) ---
+// Buscar produtos
 async function buscarProdutos(resetPage = true) {
     if (resetPage) currentPage = 1;
 
@@ -332,7 +330,115 @@ async function buscarProdutos(resetPage = true) {
     renderTable(data || []);
 }
 
-// --- RENDERIZAÇÃO DA TABELA (sem alterações) ---
+// Duplicar produto
+async function duplicarProduto(item) {
+    const tipo = prompt(
+        "Escolha o tipo de duplicação:\n\n1 = Duplicar como Lado B\n2 = Duplicar para outro formato/número/prateleira"
+    );
+
+    if (!tipo) return;
+
+    if (tipo === "1") {
+        const tituloBase = (item.titulo || "Sem identificação")
+            .replace(/\s*\(Lado A\)\s*$/i, "")
+            .replace(/\s*\(Lado B\)\s*$/i, "")
+            .trim();
+
+        const tituloLadoA = `${tituloBase} (Lado A)`;
+        const tituloLadoB = `${tituloBase} (Lado B)`;
+
+        const confirmar = confirm(
+            `O produto atual será atualizado para:\n${tituloLadoA}\n\nE será criada uma cópia como:\n${tituloLadoB}\n\nContinuar?`
+        );
+
+        if (!confirmar) return;
+
+        const { error: erroUpdate } = await supabase
+            .from("catalogo")
+            .update({ titulo: tituloLadoA })
+            .eq("id", item.id);
+
+        if (erroUpdate) {
+            console.error("Erro ao atualizar Lado A:", erroUpdate);
+            alert("Erro ao atualizar o produto atual como Lado A.");
+            return;
+        }
+
+        const novoProduto = {
+            titulo: tituloLadoB,
+            artista: item.artista || "Sem identificação",
+            gravadora: item.gravadora || null,
+            prateleira: item.prateleira || null,
+            formato: item.formato || null,
+            numero: item.numero || null,
+            stream_status: item.stream_status || null,
+            taken_down: item.taken_down === true,
+            pode_lancar: item.pode_lancar
+        };
+
+        const { error: erroInsert } = await supabase
+            .from("catalogo")
+            .insert([novoProduto]);
+
+        if (erroInsert) {
+            console.error("Erro ao criar Lado B:", erroInsert);
+            alert("Erro ao criar o produto como Lado B.");
+            return;
+        }
+    } else if (tipo === "2") {
+        const novoFormato = prompt(
+            "Informe o novo formato.\nEx: TAPE, CD, LP, Vinil, DATE",
+            item.formato || ""
+        );
+
+        if (!novoFormato) return;
+
+        const novoNumero = prompt(
+            "Informe o novo Nº do Tape/Código:",
+            item.numero || ""
+        );
+
+        if (novoNumero === null) return;
+
+        const novaPrateleira = prompt(
+            "Informe a nova prateleira:",
+            item.prateleira || ""
+        );
+
+        if (novaPrateleira === null) return;
+
+        const novoProduto = {
+            titulo: item.titulo || "Sem identificação",
+            artista: item.artista || "Sem identificação",
+            gravadora: item.gravadora || null,
+            prateleira: novaPrateleira || null,
+            formato: novoFormato || null,
+            numero: novoNumero || null,
+            stream_status: item.stream_status || null,
+            taken_down: item.taken_down === true,
+            pode_lancar: item.pode_lancar
+        };
+
+        const { error } = await supabase
+            .from("catalogo")
+            .insert([novoProduto]);
+
+        if (error) {
+            console.error("Erro ao duplicar produto:", error);
+            alert("Erro ao duplicar produto.");
+            return;
+        }
+    } else {
+        alert("Opção inválida.");
+        return;
+    }
+
+    buscarProdutos(false);
+    carregarDashboard();
+    carregarOpcoesGravadoras();
+}
+
+// Render tabela
 function renderTable(data) {
     tableBody.innerHTML = '';
 
@@ -358,73 +464,83 @@ function renderTable(data) {
                 <span class="editable-field" data-field="titulo" data-id="${item.id}" data-value="${escapeAttr(item.titulo || '')}">
                     <span class="titulo-display text-white">${escapeHtml(item.titulo || '')}</span>
                 </span>
-             </td>
+            </td>
 
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Artista</span>
                 <span class="editable-field" data-field="artista" data-id="${item.id}" data-value="${escapeAttr(item.artista || '')}">
                     <span class="artista-display text-zinc-300">${escapeHtml(item.artista || '')}</span>
                 </span>
-             </td>
+            </td>
 
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Gravadora / Label</span>
                 <span class="editable-field" data-field="gravadora" data-id="${item.id}" data-value="${escapeAttr(item.gravadora || '')}">
                     <span class="gravadora-display text-zinc-400">${escapeHtml(gravadoraLabel)}</span>
                 </span>
-             </td>
+            </td>
 
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Prateleira</span>
                 <span class="editable-field" data-field="prateleira" data-id="${item.id}" data-value="${escapeAttr(item.prateleira || '')}">
                     <span class="prateleira-display bg-zinc-800 px-2 py-1 rounded text-xs text-zinc-300 border border-zinc-700">${escapeHtml(item.prateleira || '-')}</span>
                 </span>
-             </td>
+            </td>
 
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Formato</span>
                 <span class="editable-field" data-field="formato" data-id="${item.id}" data-value="${escapeAttr(item.formato || '')}">
                     <span class="formato-display bg-zinc-800 px-2 py-1 rounded text-xs text-zinc-300 border border-zinc-700">${escapeHtml(item.formato || '-')}</span>
                 </span>
-             </td>
+            </td>
 
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Nº do Tape</span>
                 <span class="editable-field" data-field="numero" data-id="${item.id}" data-value="${escapeAttr(item.numero || '')}">
                     <span class="numero-display bg-zinc-800 px-2 py-1 rounded text-xs text-zinc-300 border border-zinc-700">${escapeHtml(item.numero || '-')}</span>
                 </span>
-             </td>
+            </td>
 
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Stream Status</span>
                 <span class="editable-field inline-block" data-field="stream_status" data-id="${item.id}" data-value="${escapeAttr(item.stream_status ?? '')}">
                     <span class="stream-status-display">${badgeStreamStatus(item.stream_status ?? null)}</span>
                 </span>
-             </td>
+            </td>
 
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Taken Down</span>
                 <span class="editable-field inline-block" data-field="taken_down" data-id="${item.id}" data-value="${item.taken_down === true ? 'true' : 'false'}">
                     <span class="taken-down-display">${badgeTakenDown(item.taken_down === true)}</span>
                 </span>
-             </td>
+            </td>
 
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Pode Lançar</span>
                 <span class="editable-field inline-block" data-field="pode_lancar" data-id="${item.id}" data-value="${item.pode_lancar === true ? 'true' : item.pode_lancar === false ? 'false' : ''}">
                     <span class="pode-lancar-display">${badgePodeLancar(item.pode_lancar)}</span>
                 </span>
-             </td>
+            </td>
 
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Ações</span>
+
+                <button class="duplicar-btn bg-indigo-800/40 hover:bg-indigo-700 text-white text-xs px-3 py-1 rounded transition mr-2 mb-2 md:mb-0" data-id="${item.id}">
+                    📄 Duplicar
+                </button>
+
                 <button class="delete-btn bg-red-800/40 hover:bg-red-700 text-white text-xs px-3 py-1 rounded transition" data-id="${item.id}">
                     🗑️ Excluir
                 </button>
-             </td>
+            </td>
         `;
 
         tableBody.appendChild(tr);
+
+        tr.querySelector('.duplicar-btn')?.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await duplicarProduto(item);
+        });
 
         tr.querySelector('.delete-btn')?.addEventListener('click', async (e) => {
             e.stopPropagation();
@@ -450,7 +566,7 @@ function renderTable(data) {
     });
 }
 
-// --- EDIÇÃO INLINE (sem alterações) ---
+// Edição inline
 function iniciarEdicao(elemento) {
     if (!elemento || elemento.dataset.editando === 'true') return;
 
@@ -512,13 +628,6 @@ function iniciarEdicao(elemento) {
                 <option value="true">Sim</option>
                 <option value="false">Não</option>
             `;
-            inputElement.value = currentValue;
-            break;
-
-        case 'gravadora':
-            inputElement = document.createElement('input');
-            inputElement.type = 'text';
-            inputElement.className = 'edit-input';
             inputElement.value = currentValue;
             break;
 
@@ -597,13 +706,11 @@ function iniciarEdicao(elemento) {
     }
 }
 
-// --- SALVAR NOVO PRODUTO (modificado: valores padrão "Sem identificação", sem validação obrigatória) ---
-// --- SALVAR NOVO PRODUTO (modificado: valores padrão "Sem identificação", sem texto_busca) ---
+// Salvar novo produto
 async function salvarProduto() {
     const tituloInput = document.getElementById('addTitulo').value.trim();
     const artistaInput = document.getElementById('addArtista').value.trim();
 
-    // Se estiver vazio, aplica "Sem identificação"
     const titulo = tituloInput !== '' ? tituloInput : "Sem identificação";
     const artista = artistaInput !== '' ? artistaInput : "Sem identificação";
 
@@ -618,7 +725,6 @@ async function salvarProduto() {
 
     const gravadora = document.getElementById('addGravadora').value || null;
 
-    // REMOVIDA a chave 'texto_busca'. O banco de dados vai gerar isso automaticamente!
     const novoProduto = {
         titulo,
         artista,
@@ -658,7 +764,7 @@ async function salvarProduto() {
     carregarDashboard();
 }
 
-// --- EXPORTAÇÕES (sem alterações) ---
+// Exportar CSV
 async function exportarCSV() {
     let query = supabase.from('catalogo').select('*');
 
@@ -666,6 +772,7 @@ async function exportarCSV() {
         const termoLimpo = currentSearch.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
         query = query.ilike('texto_busca', `%${termoLimpo}%`);
     }
+
     if (currentFormato) query = query.eq('formato', currentFormato);
     if (currentPrateleira) query = query.eq('prateleira', currentPrateleira);
     if (currentStream) query = query.eq('stream_status', currentStream);
@@ -718,6 +825,7 @@ async function exportarCSV() {
     URL.revokeObjectURL(link.href);
 }
 
+// Exportar PDF
 async function exportarPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'landscape' });
@@ -728,6 +836,7 @@ async function exportarPDF() {
         const termoLimpo = currentSearch.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
         query = query.ilike('texto_busca', `%${termoLimpo}%`);
     }
+
     if (currentFormato) query = query.eq('formato', currentFormato);
     if (currentPrateleira) query = query.eq('prateleira', currentPrateleira);
     if (currentStream) query = query.eq('stream_status', currentStream);
@@ -771,6 +880,7 @@ async function exportarPDF() {
     doc.text('Catálogo Somax', 14, 10);
     doc.setFontSize(10);
     doc.text(`Gerado em: ${new Date().toLocaleString()}`, 14, 18);
+
     doc.autoTable({
         head: [headers],
         body: rows,
@@ -779,10 +889,11 @@ async function exportarPDF() {
         headStyles: { fillColor: [99, 102, 241] },
         styles: { fontSize: 8 }
     });
+
     doc.save(`catalogo_${new Date().toISOString().slice(0,19)}.pdf`);
 }
 
-// --- ABRIR FORMULÁRIO ---
+// Abrir formulário
 function abrirFormularioComPreenchimento() {
     addSection.classList.remove('hidden');
     noResultsMsg.classList.add('hidden');
@@ -790,12 +901,48 @@ function abrirFormularioComPreenchimento() {
     document.getElementById('addTitulo').focus();
 }
 
-// --- EVENTOS ---
+// Eventos
 let timeoutId = null;
 
 function debounceBuscar() {
     if (timeoutId) clearTimeout(timeoutId);
     timeoutId = setTimeout(() => buscarProdutos(true), 400);
+}
+
+async function buscarUltimoND() {
+    const el = document.getElementById('ultimoNDInfo');
+    if (!el) return;
+
+    const { data, error } = await supabase
+        .from('catalogo')
+        .select('numero')
+        .ilike('numero', 'ND-%');
+
+    if (error) {
+        console.error('Erro ao buscar último ND:', error);
+        el.textContent = 'Erro ao carregar';
+        return;
+    }
+
+    let maiorNumero = 0;
+    let ultimoND = 'Nenhum ND cadastrado';
+
+    (data || []).forEach(item => {
+        if (!item.numero) return;
+
+        const match = item.numero.match(/^ND-(\d+)$/i);
+
+        if (match) {
+            const numero = parseInt(match[1], 10);
+
+            if (numero > maiorNumero) {
+                maiorNumero = numero;
+                ultimoND = `ND-${String(numero).padStart(4, '0')}`;
+            }
+        }
+    });
+
+    el.textContent = ultimoND;
 }
 
 searchInput.addEventListener('input', debounceBuscar);
@@ -840,6 +987,7 @@ document.getElementById('btnGoToPage').addEventListener('click', () => {
     let page = parseInt(document.getElementById('goToPage').value);
     if (isNaN(page)) page = 1;
     page = Math.min(Math.max(page, 1), totalPages);
+
     if (page !== currentPage) {
         currentPage = page;
         buscarProdutos(false);
@@ -851,12 +999,13 @@ document.getElementById('btnExportPDF').addEventListener('click', exportarPDF);
 document.getElementById('tabCatalogo').addEventListener('click', mostrarCatalogo);
 document.getElementById('tabDashboard').addEventListener('click', mostrarDashboard);
 
-// --- FILTROS RECOLHÍVEIS ---
+// Filtros recolhíveis
 const filterContent = document.getElementById('filterContent');
 const toggleBtn = document.getElementById('toggleFiltersBtn');
 
 if (filterContent && toggleBtn) {
     let filtersVisible = false;
+
     toggleBtn.addEventListener('click', () => {
         if (filtersVisible) {
             filterContent.style.display = 'none';
@@ -865,8 +1014,10 @@ if (filterContent && toggleBtn) {
             filterContent.style.display = 'block';
             toggleBtn.innerHTML = '<span>✖</span> Fechar';
         }
+
         filtersVisible = !filtersVisible;
     });
+
     filterContent.style.display = 'none';
 }
 
@@ -874,3 +1025,4 @@ if (filterContent && toggleBtn) {
 gerarOpcoesPrateleiras();
 carregarOpcoesGravadoras();
 buscarProdutos(true);
+buscarUltimoND();
