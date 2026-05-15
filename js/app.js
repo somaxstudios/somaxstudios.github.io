@@ -913,6 +913,14 @@ async function buscarUltimoND() {
     const el = document.getElementById('ultimoNDInfo');
     if (!el) return;
 
+    const prefixos = {
+        'ND-TP': 'Tape',
+        'ND-CD': 'CD',
+        'ND-LP': 'LP',
+        'ND-VN': 'Vinil',
+        'ND-DT': 'DATE'
+    };
+
     const { data, error } = await supabase
         .from('catalogo')
         .select('numero')
@@ -924,25 +932,52 @@ async function buscarUltimoND() {
         return;
     }
 
-    let maiorNumero = 0;
-    let ultimoND = 'Nenhum ND cadastrado';
+    const maiores = {};
 
-    (data || []).forEach(item => {
-        if (!item.numero) return;
-
-        const match = item.numero.match(/^ND-(\d+)$/i);
-
-        if (match) {
-            const numero = parseInt(match[1], 10);
-
-            if (numero > maiorNumero) {
-                maiorNumero = numero;
-                ultimoND = `ND-${String(numero).padStart(4, '0')}`;
-            }
-        }
+    Object.keys(prefixos).forEach(prefixo => {
+        maiores[prefixo] = 0;
     });
 
-    el.textContent = ultimoND;
+    (data || []).forEach(item => {
+        const numero = (item.numero || '').trim();
+
+        Object.keys(prefixos).forEach(prefixo => {
+            const regex = new RegExp(`^${prefixo}(\\d+)$`, 'i');
+            const match = numero.match(regex);
+
+            if (match) {
+                const valor = parseInt(match[1], 10);
+
+                if (valor > maiores[prefixo]) {
+                    maiores[prefixo] = valor;
+                }
+            }
+        });
+    });
+
+    const html = Object.entries(prefixos)
+        .map(([prefixo, label]) => {
+            const maior = maiores[prefixo];
+
+            if (!maior) {
+                return `
+                    <span class="inline-flex items-center gap-1 bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1 mr-2 mb-2">
+                        <span class="text-zinc-400">${label}:</span>
+                        <strong class="text-zinc-500">Nenhum</strong>
+                    </span>
+                `;
+            }
+
+            return `
+                <span class="inline-flex items-center gap-1 bg-zinc-800 border border-yellow-700/40 rounded-lg px-2 py-1 mr-2 mb-2">
+                    <span class="text-zinc-400">${label}:</span>
+                    <strong class="text-yellow-400">${prefixo}${String(maior).padStart(4, '0')}</strong>
+                </span>
+            `;
+        })
+        .join('');
+
+    el.innerHTML = html;
 }
 
 searchInput.addEventListener('input', debounceBuscar);
