@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
-  <title>SOMAX STUDIOS — Produtos - Off Stream </title>
+  <title>SOMAX STUDIOS — Off Stream Mobile | Admin</title>
 
   <!-- Tailwind + Fonts + Lucide + jsPDF + autoTable -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -54,7 +54,6 @@
       border-color: #c9a84c;
       box-shadow: 0 0 0 2px rgba(201,168,76,0.2);
     }
-    /* Tabela responsiva com scroll horizontal */
     .table-wrapper {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
@@ -107,7 +106,6 @@
       opacity: 0.4;
       cursor: not-allowed;
     }
-    /* Cards de métricas mobile-friendly */
     .metric-card {
       background: #111111;
       border: 1px solid #2a2a2a;
@@ -115,7 +113,6 @@
       padding: 1rem;
       text-align: center;
     }
-    /* stats shelf */
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -137,149 +134,182 @@
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: #111; }
     ::-webkit-scrollbar-thumb { background: #c9a84c; border-radius: 10px; }
+
+    /* Animação sutil para login */
+    .login-card {
+      animation: fadeUp 0.4s ease-out;
+    }
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(15px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    /* overlay loading dentro do app */
+    .app-loading {
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(4px);
+    }
   </style>
 </head>
 <body class="antialiased">
 
-  <div id="loadingOverlay" class="fixed inset-0 bg-black/95 z-[500] flex items-center justify-center backdrop-blur-sm">
-    <div class="text-center">
-      <i data-lucide="loader-2" class="animate-spin w-10 h-10 text-[#c9a84c] mx-auto mb-3"></i>
-      <p class="text-white text-xs">Carregando catálogo...</p>
+  <!-- TELA DE LOGIN (inicialmente visível se não autenticado) -->
+  <div id="loginContainer" class="fixed inset-0 bg-black/95 z-[1000] flex items-center justify-center p-4 backdrop-blur-sm" style="display: flex;">
+    <div class="login-card max-w-md w-full bg-[#0c0c0c] border border-[#2a2a2a] rounded-2xl shadow-2xl p-6">
+      <div class="flex justify-center mb-4">
+        <div class="w-14 h-14 rounded-full bg-[#c9a84c]/15 flex items-center justify-center border border-[#c9a84c]/30">
+          <i data-lucide="lock" class="w-7 h-7 text-[#c9a84c]"></i>
+        </div>
+      </div>
+      <h2 class="text-center text-2xl font-bold gold-gradient mb-1">Somax Studios</h2>
+      <p class="text-center text-gray-400 text-xs mb-6">Acesso administrativo · OFF Stream</p>
+      
+      <div id="loginErrorMsg" class="bg-red-950/40 border border-red-800/50 text-red-300 text-xs rounded-lg p-2 mb-4 hidden text-center"></div>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-[11px] uppercase text-gray-400 mb-1">E-mail (admin)</label>
+          <div class="relative">
+            <i data-lucide="mail" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"></i>
+            <input type="email" id="loginEmail" value="visitantes@gmail.com" class="w-full bg-black/60 border border-[#2a2a2a] rounded-xl py-2.5 pl-9 pr-3 text-white text-sm focus:border-[#c9a84c] outline-none" placeholder="seu@email.com">
+          </div>
+        </div>
+        <div>
+          <label class="block text-[11px] uppercase text-gray-400 mb-1">Senha</label>
+          <div class="relative">
+            <i data-lucide="key" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"></i>
+            <input type="password" id="loginPassword" class="w-full bg-black/60 border border-[#2a2a2a] rounded-xl py-2.5 pl-9 pr-3 text-white text-sm focus:border-[#c9a84c] outline-none" placeholder="••••••••">
+          </div>
+        </div>
+        <button id="btnLogin" class="w-full bg-gradient-to-r from-[#c9a84c] to-[#a17f35] text-black font-bold py-2.5 rounded-xl transition-all hover:scale-[1.01] flex items-center justify-center gap-2">
+          <i data-lucide="log-in" class="w-4 h-4"></i> Entrar como Admin
+        </button>
+        <p class="text-[10px] text-center text-gray-500 mt-2">Acesso restrito · proteção RLS ativa</p>
+      </div>
     </div>
   </div>
 
-  <main class="max-w-full px-4 py-5 md:px-6 md:py-8">
-    <!-- Cabeçalho -->
-    <div class="flex flex-col gap-3 border-b border-[#2a2a2a] pb-5 mb-5">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <div class="w-8 h-8 rounded-xl bg-[#c9a84c]/10 flex items-center justify-center">
-            <i data-lucide="archive" class="w-4 h-4 text-[#c9a84c]"></i>
+  <!-- APLICAÇÃO PRINCIPAL (inicialmente oculta) -->
+  <div id="appContainer" style="display: none;">
+    <main class="max-w-full px-4 py-5 md:px-6 md:py-8">
+      <!-- Cabeçalho com botão logout -->
+      <div class="flex flex-col gap-3 border-b border-[#2a2a2a] pb-5 mb-5">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-xl bg-[#c9a84c]/10 flex items-center justify-center">
+              <i data-lucide="archive" class="w-4 h-4 text-[#c9a84c]"></i>
+            </div>
+            <h1 class="text-xl font-black"><span class="gold-gradient">Off Stream</span></h1>
           </div>
-          <h1 class="text-xl font-black"><span class="gold-gradient">Off Stream</span></h1>
+          <div class="flex gap-2 no-print">
+            <button id="btnRefresh" class="bg-[#121212] border border-[#2a2a2a] rounded-xl px-3 py-2 text-xs flex items-center gap-1">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            </button>
+            <button id="btnExportCSV" class="bg-[#121212] border border-[#2a2a2a] rounded-xl px-3 py-2 text-xs flex items-center gap-1">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i> CSV
+            </button>
+            <button id="btnExportPDF" class="bg-[#121212] border border-[#2a2a2a] rounded-xl px-3 py-2 text-xs flex items-center gap-1">
+              <i data-lucide="file-text" class="w-3.5 h-3.5"></i> PDF
+            </button>
+            <button id="btnLogout" class="bg-red-950/40 border border-red-800/50 rounded-xl px-3 py-2 text-xs flex items-center gap-1 text-red-300 hover:bg-red-900/30">
+              <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Sair
+            </button>
+          </div>
         </div>
-        <div class="flex gap-2 no-print">
-          <button id="btnRefresh" class="bg-[#121212] border border-[#2a2a2a] rounded-xl px-3 py-2 text-xs flex items-center gap-1">
-            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-          </button>
-          <button id="btnExportCSV" class="bg-[#121212] border border-[#2a2a2a] rounded-xl px-3 py-2 text-xs flex items-center gap-1">
-            <i data-lucide="download" class="w-3.5 h-3.5"></i> CSV
-          </button>
-          <button id="btnExportPDF" class="bg-[#121212] border border-[#2a2a2a] rounded-xl px-3 py-2 text-xs flex items-center gap-1">
-            <i data-lucide="file-text" class="w-3.5 h-3.5"></i> PDF
-          </button>
-        </div>
+        <p class="text-gray-400 text-xs leading-relaxed">
+          Produtos já encontrados nas prateleiras, com status OFF (pendentes de upload).
+        </p>
       </div>
-      <p class="text-gray-400 text-xs leading-relaxed">
-        Produtos já encontrados nas prateleiras, com status OFF (pendentes de upload).
-      </p>
-    </div>
 
-    <!-- Cards resumo (mobile otimizado) -->
-    <div class="grid grid-cols-3 gap-3 mb-5">
-      <div class="metric-card">
-        <p class="text-gray-400 text-[10px] uppercase">Total Off</p>
-        <p id="totalOffValue" class="text-2xl font-black text-red-400">0</p>
+      <!-- Cards resumo -->
+      <div class="grid grid-cols-3 gap-3 mb-5">
+        <div class="metric-card">
+          <p class="text-gray-400 text-[10px] uppercase">Total Off</p>
+          <p id="totalOffValue" class="text-2xl font-black text-red-400">0</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-gray-400 text-[10px] uppercase">Prateleiras</p>
+          <p id="totalShelvesValue" class="text-2xl font-black text-[#c9a84c]">0</p>
+        </div>
+        <div class="metric-card">
+          <p class="text-gray-400 text-[10px] uppercase">Formatos</p>
+          <p id="totalFormatosValue" class="text-2xl font-black text-white">—</p>
+        </div>
       </div>
-      <div class="metric-card">
-        <p class="text-gray-400 text-[10px] uppercase">Prateleiras</p>
-        <p id="totalShelvesValue" class="text-2xl font-black text-[#c9a84c]">0</p>
-      </div>
-      <div class="metric-card">
-        <p class="text-gray-400 text-[10px] uppercase">Formatos</p>
-        <p id="totalFormatosValue" class="text-2xl font-black text-white">—</p>
-      </div>
-    </div>
 
-    <!-- Filtros (empilhados no mobile) -->
-    <div class="bg-card rounded-xl p-4 mb-5 space-y-3">
-      <div>
-        <label class="block text-[10px] uppercase text-gray-400 mb-1">Buscar</label>
-        <div class="relative">
-          <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500"></i>
-          <input type="text" id="searchInput" placeholder="Título ou artista" class="search-input pl-8 py-2 text-sm">
+      <!-- Filtros -->
+      <div class="bg-card rounded-xl p-4 mb-5 space-y-3">
+        <div>
+          <label class="block text-[10px] uppercase text-gray-400 mb-1">Buscar</label>
+          <div class="relative">
+            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500"></i>
+            <input type="text" id="searchInput" placeholder="Título ou artista" class="search-input pl-8 py-2 text-sm">
+          </div>
         </div>
+        <div>
+          <label class="block text-[10px] uppercase text-gray-400 mb-1">Prateleira</label>
+          <select id="shelfFilter" class="filter-select py-2 text-sm"></select>
+        </div>
+        <div>
+          <label class="block text-[10px] uppercase text-gray-400 mb-1">Formato</label>
+          <select id="formatoFilter" class="filter-select py-2 text-sm"></select>
+        </div>
+        <button id="clearFilters" class="text-xs text-gray-400 hover:text-[#c9a84c] flex items-center justify-center gap-1 py-1">
+          <i data-lucide="eraser" class="w-3 h-3"></i> Limpar filtros
+        </button>
       </div>
-      <div>
-        <label class="block text-[10px] uppercase text-gray-400 mb-1">Prateleira</label>
-        <select id="shelfFilter" class="filter-select py-2 text-sm"></select>
-      </div>
-      <div>
-        <label class="block text-[10px] uppercase text-gray-400 mb-1">Formato</label>
-        <select id="formatoFilter" class="filter-select py-2 text-sm"></select>
-      </div>
-      <button id="clearFilters" class="text-xs text-gray-400 hover:text-[#c9a84c] flex items-center justify-center gap-1 py-1">
-        <i data-lucide="eraser" class="w-3 h-3"></i> Limpar filtros
-      </button>
-    </div>
 
-    <!-- Painel de estatísticas da prateleira selecionada -->
-    <div id="shelfStatsPanel" class="bg-gradient-to-r from-[#0f0f0f] to-[#151515] rounded-xl border border-[#2a2a2a] p-4 mb-5 hidden">
-      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-        <h3 class="text-sm font-bold gold-gradient flex items-center gap-1">
-          <i data-lucide="bar-chart-3" class="w-4 h-4"></i> Estatísticas
-        </h3>
-        <span id="shelfNameBadge" class="bg-[#c9a84c]/10 px-2 py-0.5 rounded-full text-[#c9a84c] text-xs font-mono"></span>
+      <!-- Estatísticas da prateleira -->
+      <div id="shelfStatsPanel" class="bg-gradient-to-r from-[#0f0f0f] to-[#151515] rounded-xl border border-[#2a2a2a] p-4 mb-5 hidden">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <h3 class="text-sm font-bold gold-gradient flex items-center gap-1">
+            <i data-lucide="bar-chart-3" class="w-4 h-4"></i> Estatísticas
+          </h3>
+          <span id="shelfNameBadge" class="bg-[#c9a84c]/10 px-2 py-0.5 rounded-full text-[#c9a84c] text-xs font-mono"></span>
+        </div>
+        <div class="stats-grid">
+          <div class="bg-black/30 rounded-lg p-2 text-center"><p class="text-xl font-black text-white" id="statTotal">0</p><p class="text-[9px] uppercase text-gray-400">Total OFF</p></div>
+          <div class="bg-black/30 rounded-lg p-2 text-center"><p class="text-xl font-black text-orange-400" id="statSemNumero">0</p><p class="text-[9px] uppercase text-gray-400">Sem Nº</p></div>
+          <div class="bg-black/30 rounded-lg p-2 text-center"><p class="text-xl font-black text-red-400" id="statSemArtista">0</p><p class="text-[9px] uppercase text-gray-400">Sem Artista</p></div>
+          <div class="bg-black/30 rounded-lg p-2 text-center"><p class="text-xl font-black text-amber-400" id="statSemTitulo">0</p><p class="text-[9px] uppercase text-gray-400">Sem Título</p></div>
+          <div class="bg-black/30 rounded-lg p-2 text-center"><p class="text-xl font-black text-emerald-400" id="statCompletos">0</p><p class="text-[9px] uppercase text-gray-400">Completos*</p></div>
+        </div>
+        <p class="text-[9px] text-gray-500 mt-2 text-center">*Completos = Número + Artista + Título</p>
       </div>
-      <div class="stats-grid">
-        <div class="bg-black/30 rounded-lg p-2 text-center">
-          <p class="text-xl font-black text-white" id="statTotal">0</p>
-          <p class="text-[9px] uppercase text-gray-400">Total OFF</p>
-        </div>
-        <div class="bg-black/30 rounded-lg p-2 text-center">
-          <p class="text-xl font-black text-orange-400" id="statSemNumero">0</p>
-          <p class="text-[9px] uppercase text-gray-400">Sem Nº</p>
-        </div>
-        <div class="bg-black/30 rounded-lg p-2 text-center">
-          <p class="text-xl font-black text-red-400" id="statSemArtista">0</p>
-          <p class="text-[9px] uppercase text-gray-400">Sem Artista</p>
-        </div>
-        <div class="bg-black/30 rounded-lg p-2 text-center">
-          <p class="text-xl font-black text-amber-400" id="statSemTitulo">0</p>
-          <p class="text-[9px] uppercase text-gray-400">Sem Título</p>
-        </div>
-        <div class="bg-black/30 rounded-lg p-2 text-center">
-          <p class="text-xl font-black text-emerald-400" id="statCompletos">0</p>
-          <p class="text-[9px] uppercase text-gray-400">Completos*</p>
-        </div>
-      </div>
-      <p class="text-[9px] text-gray-500 mt-2 text-center">*Completos = Número + Artista + Título</p>
-    </div>
 
-    <!-- Tabela com scroll horizontal -->
-    <div class="bg-card rounded-xl border border-[#2a2a2a] overflow-hidden">
-      <div class="table-wrapper">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Título</th>
-              <th>Artista</th>
-              <th>Prateleira</th>
-              <th>Formato</th>
-              <th>Gravadora</th>
-              <th>Número</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody">
-            <tr><td colspan="8" class="text-center py-8 text-gray-400 text-sm">Carregando...</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="flex flex-col sm:flex-row justify-between items-center gap-3 p-4 border-t border-[#2a2a2a] bg-black/20">
-        <div class="text-[11px] text-gray-400">
-          <span id="infoStart">0</span> - <span id="infoEnd">0</span> de <span id="totalFiltered">0</span>
+      <!-- Tabela -->
+      <div class="bg-card rounded-xl border border-[#2a2a2a] overflow-hidden">
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr><th>#</th><th>Título</th><th>Artista</th><th>Prateleira</th><th>Formato</th><th>Gravadora</th><th>Número</th><th>Status</th></tr>
+            </thead>
+            <tbody id="tableBody">
+              <tr><td colspan="8" class="text-center py-8 text-gray-400 text-sm">Autentique para carregar dados</td></tr>
+            </tbody>
+          </table>
         </div>
-        <div class="pagination" id="paginationControls"></div>
+        <div class="flex flex-col sm:flex-row justify-between items-center gap-3 p-4 border-t border-[#2a2a2a] bg-black/20">
+          <div class="text-[11px] text-gray-400"><span id="infoStart">0</span> - <span id="infoEnd">0</span> de <span id="totalFiltered">0</span></div>
+          <div class="pagination" id="paginationControls"></div>
+        </div>
       </div>
-    </div>
+      <div class="mt-6 text-center text-[10px] text-gray-500 border-t border-[#2a2a2a] pt-4 flex justify-between">
+        <span>Somax Studios</span>
+        <span id="dataAtualizacao">—</span>
+      </div>
+    </main>
 
-    <div class="mt-6 text-center text-[10px] text-gray-500 border-t border-[#2a2a2a] pt-4 flex justify-between">
-      <span>Somax Studios</span>
-      <span id="dataAtualizacao">—</span>
+    <!-- Loading overlay interno (quando recarregar dados) -->
+    <div id="appLoadingOverlay" class="fixed inset-0 bg-black/90 z-[200] flex items-center justify-center backdrop-blur-sm hidden">
+      <div class="text-center"><i data-lucide="loader-2" class="animate-spin w-8 h-8 text-[#c9a84c] mx-auto mb-2"></i><p class="text-white text-xs">Carregando catálogo...</p></div>
     </div>
-  </main>
+  </div>
 
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
@@ -288,13 +318,16 @@
     const supabaseKey = 'sb_publishable_shOmcA8udv3Tw0xKYzafAw_s1YXgbDk';
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Estado da aplicação
     let todosProdutosOff = [];
     let dadosFiltrados = [];
     let currentPage = 1;
     const rowsPerPage = 20;
 
-    // DOM elements
-    const loadingEl = document.getElementById('loadingOverlay');
+    // Elementos DOM do app
+    const appContainer = document.getElementById('appContainer');
+    const loginContainer = document.getElementById('loginContainer');
+    const appLoadingOverlay = document.getElementById('appLoadingOverlay');
     const tableBody = document.getElementById('tableBody');
     const searchInput = document.getElementById('searchInput');
     const shelfFilter = document.getElementById('shelfFilter');
@@ -303,12 +336,14 @@
     const btnRefresh = document.getElementById('btnRefresh');
     const btnExportCSV = document.getElementById('btnExportCSV');
     const btnExportPDF = document.getElementById('btnExportPDF');
+    const btnLogout = document.getElementById('btnLogout');
     const totalOffSpan = document.getElementById('totalOffValue');
     const totalShelvesSpan = document.getElementById('totalShelvesValue');
     const totalFormatosSpan = document.getElementById('totalFormatosValue');
     const dataAtualizacaoSpan = document.getElementById('dataAtualizacao');
     const shelfStatsPanel = document.getElementById('shelfStatsPanel');
 
+    // helpers
     const norm = (v) => (v ?? '').toString().trim();
     const lower = (v) => norm(v).toLowerCase();
     const isEmpty = (v) => {
@@ -320,6 +355,7 @@
       return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
     };
 
+    // --- Funções de dados ---
     async function carregarCatalogo() {
       let all = [];
       let start = 0;
@@ -408,18 +444,16 @@
       let html = '';
       pagina.forEach((item, idx) => {
         const rowNum = start + idx + 1;
-        html += `
-          <tr>
-            <td class="text-gray-400 text-xs">${rowNum}</td>
-            <td class="font-medium text-sm">${escapeHtml(item.titulo || '—')}</td>
-            <td class="text-sm">${escapeHtml(item.artista || '—')}</td>
-            <td><span class="text-xs bg-[#c9a84c]/10 text-[#c9a84c] px-1.5 py-0.5 rounded">${escapeHtml(item.prateleira || '—')}</span></td>
-            <td class="text-sm">${escapeHtml(item.formato || '—')}</td>
-            <td class="text-xs text-gray-300">${escapeHtml(item.gravadora || '—')}</td>
-            <td class="text-xs text-gray-400">${escapeHtml(item.numero || '—')}</td>
-            <td><span class="badge-off">OFF</span></td>
-          </tr>
-        `;
+        html += `<tr>
+          <td class="text-gray-400 text-xs">${rowNum}</td>
+          <td class="font-medium text-sm">${escapeHtml(item.titulo || '—')}</td>
+          <td class="text-sm">${escapeHtml(item.artista || '—')}</td>
+          <td><span class="text-xs bg-[#c9a84c]/10 text-[#c9a84c] px-1.5 py-0.5 rounded">${escapeHtml(item.prateleira || '—')}</span></td>
+          <td class="text-sm">${escapeHtml(item.formato || '—')}</td>
+          <td class="text-xs text-gray-300">${escapeHtml(item.gravadora || '—')}</td>
+          <td class="text-xs text-gray-400">${escapeHtml(item.numero || '—')}</td>
+          <td><span class="badge-off">OFF</span></td>
+        </tr>`;
       });
       tableBody.innerHTML = html;
       lucide.createIcons();
@@ -509,9 +543,11 @@
       aplicarFiltros();
     }
 
-    async function inicializar() {
+    // --- Core: carregar dados e popular painel (somente com autenticação ativa)---
+    async function carregarDadosApp() {
+      if (!appLoadingOverlay) return;
+      appLoadingOverlay.classList.remove('hidden');
       try {
-        if (loadingEl) loadingEl.style.display = 'flex';
         const catalogo = await carregarCatalogo();
         todosProdutosOff = filtrarProdutosOff(catalogo);
         atualizarMetricasGerais(todosProdutosOff);
@@ -519,27 +555,102 @@
         renderizarTabela();
         atualizarPaginacaoInfo();
         dataAtualizacaoSpan.innerText = `Atualizado: ${new Date().toLocaleString('pt-BR')}`;
-        aplicarFiltros(); // garante que os filtros (se houver valores) sejam aplicados
+        aplicarFiltros(); 
       } catch (err) {
         console.error(err);
-        tableBody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-red-400 text-sm">Erro: ${err.message}</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-red-400 text-sm">Erro ao carregar: ${err.message}</td></tr>`;
       } finally {
-        if (loadingEl) loadingEl.style.display = 'none';
+        appLoadingOverlay.classList.add('hidden');
       }
     }
 
-    function configurarEventos() {
+    // --- LOGOUT ---
+    async function logout() {
+      await supabase.auth.signOut();
+      // Resetar estados
+      todosProdutosOff = [];
+      dadosFiltrados = [];
+      tableBody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-gray-400">Faça login para visualizar</td></tr>`;
+      // Esconder app e mostrar login
+      appContainer.style.display = 'none';
+      loginContainer.style.display = 'flex';
+      // limpar possíveis filtros
+    }
+
+    // --- LOGIN handler ---
+    async function handleLogin(email, password) {
+      const errorDiv = document.getElementById('loginErrorMsg');
+      errorDiv.classList.add('hidden');
+      try {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        // sucesso: esconde login, mostra app e carrega dados
+        loginContainer.style.display = 'none';
+        appContainer.style.display = 'block';
+        // recarregar dados com sessão ativa
+        await carregarDadosApp();
+        // reaplicar ícones lucide na área principal
+        lucide.createIcons();
+      } catch (err) {
+        errorDiv.innerText = `Erro: ${err.message || 'Credenciais inválidas'}`;
+        errorDiv.classList.remove('hidden');
+      }
+    }
+
+    // --- Verificar sessão existente ao iniciar ---
+    async function verificarSessao() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        // Já logado: mostrar app e carregar dados
+        loginContainer.style.display = 'none';
+        appContainer.style.display = 'block';
+        await carregarDadosApp();
+        lucide.createIcons();
+      } else {
+        loginContainer.style.display = 'flex';
+        appContainer.style.display = 'none';
+      }
+    }
+
+    // --- Configurar eventos (botões do app) ---
+    function configurarEventosApp() {
       searchInput.addEventListener('input', aplicarFiltros);
       shelfFilter.addEventListener('change', aplicarFiltros);
       formatoFilter.addEventListener('change', aplicarFiltros);
       clearFiltersBtn.addEventListener('click', limparFiltros);
-      btnRefresh.addEventListener('click', inicializar);
+      btnRefresh.addEventListener('click', () => carregarDadosApp());
       btnExportCSV.addEventListener('click', exportarCSV);
       btnExportPDF.addEventListener('click', exportarPDF);
+      btnLogout.addEventListener('click', logout);
     }
 
-    configurarEventos();
-    inicializar();
+    // Evento do botão login
+    document.getElementById('btnLogin').addEventListener('click', () => {
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      if (!email || !password) {
+        const errorDiv = document.getElementById('loginErrorMsg');
+        errorDiv.innerText = 'Preencha e-mail e senha.';
+        errorDiv.classList.remove('hidden');
+        return;
+      }
+      handleLogin(email, password);
+    });
+
+    // Permitir tecla Enter nos campos de login
+    const pwdField = document.getElementById('loginPassword');
+    const emailField = document.getElementById('loginEmail');
+    const loginHandler = () => {
+      const email = emailField.value.trim();
+      const password = pwdField.value;
+      if (email && password) handleLogin(email, password);
+    };
+    pwdField.addEventListener('keypress', (e) => { if (e.key === 'Enter') loginHandler(); });
+    emailField.addEventListener('keypress', (e) => { if (e.key === 'Enter') loginHandler(); });
+
+    // Inicialização geral: verifica sessão e configura eventos do app
+    configurarEventosApp();
+    verificarSessao();
   </script>
 </body>
 </html>
