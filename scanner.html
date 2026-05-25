@@ -80,7 +80,7 @@
         <div id="reader" class="bg-zinc-900 border border-zinc-800 rounded-2xl p-2 shadow-2xl overflow-hidden"></div>
     </div>
 
-    <!-- Painel do Grupo Compacto (lista de Tapes) -->
+    <!-- Painel do Grupo Compacto (lista de Tapes lida do Supabase) -->
     <div id="grupo-container" class="hidden bg-zinc-900 border border-emerald-800 rounded-xl p-4 mb-4">
         <div class="flex justify-between items-center border-b border-zinc-800 pb-2 mb-3">
             <h3 class="font-bold text-emerald-400">📦 Grupo Compacto</h3>
@@ -88,12 +88,11 @@
         </div>
         <p class="text-sm text-zinc-300 mb-3" id="grupo-descricao"></p>
         <div id="lista-produtos-grupo" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
-            <!-- Os cards dos Tapes serão inseridos aqui -->
             <div class="text-center text-zinc-500 text-sm py-2">A carregar lista...</div>
         </div>
     </div>
 
-    <!-- Ficha técnica do produto individual -->
+    <!-- Ficha técnica do produto individual (igual ao original) -->
     <div id="resultado" class="hidden bg-zinc-900 border border-zinc-800 rounded-xl p-5 shadow-xl mb-6 mt-4 relative z-10">
         <div class="flex justify-between items-start border-b border-zinc-800 pb-4 mb-4">
             <div>
@@ -197,59 +196,66 @@ let dadosCarregados = {
 };
 
 // ------------------------------------------------------------
-//  GRUPOS COMPACTOS (localStorage)
+//  GRUPOS COMPACTOS (agora via Supabase)
 // ------------------------------------------------------------
-function carregarGruposCompactos() {
-    const stored = localStorage.getItem('somax_grupos_compactos');
-    if (stored) {
-        try {
-            return JSON.parse(stored);
-        } catch(e) { return []; }
-    }
-    return [];
-}
-
 function extrairIdGrupo(codigo) {
+    // CMP-00000001 → extrai o número
     const match = codigo.match(/^CMP-(\d+)$/i);
-    if (match) return parseInt(match[1], 10);
+    if (match) return match[1]; // retorna o ID como string (vai ser usado na query)
     return null;
 }
 
-// Buscar produtos de um grupo a partir dos IDs guardados
-async function buscarProdutosDoGrupo(grupoId) {
-    const grupos = carregarGruposCompactos();
-    const grupo = grupos.find(g => g.id === grupoId);
-    if (!grupo || !grupo.produtosIds || grupo.produtosIds.length === 0) {
-        return [];
+// Buscar grupo pelo código (ex: CMP-00000001)
+async function buscarGrupoPorCodigo(codigoGrupo) {
+    const { data, error } = await supabase
+        .from('grupos_compactos')
+        .select('*')
+        .eq('codigo', codigoGrupo)
+        .single();
+    if (error) {
+        console.error('Erro ao buscar grupo:', error);
+        return null;
     }
-    const ids = grupo.produtosIds.map(id => Number(id));
+    return data;
+}
+
+// Buscar produtos do grupo a partir dos IDs armazenados
+async function buscarProdutosDoGrupo(produtosIds) {
+    if (!produtosIds || produtosIds.length === 0) return [];
     const { data, error } = await supabase
         .from('catalogo')
         .select('id, titulo, artista, numero, prateleira')
-        .in('id', ids);
+        .in('id', produtosIds);
     if (error) {
         console.error(error);
         return [];
     }
-    // Ordenar pela ordem original (opcional)
     return data;
 }
 
-// Mostrar lista de Tapes do grupo (cards com botões)
-async function exibirSeletorGrupo(grupoId) {
+// Mostrar lista de Tapes do grupo
+async function exibirSeletorGrupo(codigoGrupo) {
     const grupoContainer = document.getElementById('grupo-container');
     const listaDiv = document.getElementById('lista-produtos-grupo');
     const descricaoSpan = document.getElementById('grupo-descricao');
     
-    // Limpar e mostrar loading
     listaDiv.innerHTML = '<div class="text-center text-zinc-500 text-sm py-2">A carregar fitas do grupo...</div>';
     grupoContainer.classList.remove('hidden');
     resultadoDiv.classList.add('hidden');
     
-    const produtos = await buscarProdutosDoGrupo(grupoId);
-    if (!produtos.length) {
-        listaDiv.innerHTML = '<div class="text-center text-red-400 text-sm py-2">Nenhum Tape encontrado para este grupo. O grupo pode estar vazio ou os produtos foram removidos.</div>';
-        descricaoSpan.textContent = `Grupo ID ${grupoId} – sem fitas disponíveis.`;
+    const grupo = await buscarGrupoPorCodigo(codigoGrupo);
+    if (!grupo) {
+        listaDiv.innerHTML = '<div class="text-center text-red-400 text-sm py-2">Grupo não encontrado na base de dados.</div>';
+        descricaoSpan.textContent = `Código ${codigoGrupo} não corresponde a nenhum grupo. Verifique se o código foi gerado corretamente.`;
+        return;
+    }
+    
+    const produtosIds = grupo.produtos_ids || [];
+    const produtos = await buscarProdutosDoGrupo(produtosIds);
+    
+    if (produtos.length === 0) {
+        listaDiv.innerHTML = `<div class="text-center text-amber-400 text-sm py-2">Nenhum Tape encontrado para este grupo. IDs no grupo: ${produtosIds.join(', ')}.</div>`;
+        descricaoSpan.textContent = `Grupo ${codigoGrupo} – sem fitas válidas.`;
         return;
     }
     
@@ -335,14 +341,13 @@ async function carregarProdutoIndividual(prodId) {
         };
     }
     
-    document.getElementById('grupo-container')?.classList.add('hidden');
     resultadoDiv.classList.remove('hidden');
     atualizarInterfaceEcra();
     if (isEditing) toggleEditMode();
 }
 
 // ------------------------------------------------------------
-//  UI - Ficha Técnica
+//  UI - Ficha Técnica (mantido igual ao original)
 // ------------------------------------------------------------
 function atualizarInterfaceEcra() {
     const prod = dadosCarregados.catalogo;
@@ -496,13 +501,15 @@ async function onScanSuccess(decodedText) {
         scanning = false;
         readerContainer.classList.add('hidden');
         
-        const grupoId = extrairIdGrupo(decodedText);
-        if (grupoId !== null) {
-            // É código de grupo compacto
-            await exibirSeletorGrupo(grupoId);
+        // Verificar se é código de grupo compacto (CMP-xxxxx)
+        const codigoGrupoMatch = decodedText.match(/^CMP-(\d+)$/i);
+        if (codigoGrupoMatch) {
+            // É grupo compacto – exibir lista de Tapes
+            await exibirSeletorGrupo(decodedText);
             return;
         }
         
+        // Caso contrário, tratar como ID de produto (Tape)
         const prodId = parseInt(decodedText, 10);
         if (isNaN(prodId)) {
             mostrarErro("Código inválido. Use um código de Tape (ex: 00000123) ou grupo (CMP-xxxxx).");
