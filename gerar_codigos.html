@@ -43,6 +43,11 @@
             margin-top: 0;
         }
 
+        .group-card {
+            background: #1f1f24;
+            border-left: 4px solid #10b981;
+        }
+
         @media print {
             body * { visibility: hidden; }
             .print-area, .print-area * { visibility: visible; }
@@ -95,12 +100,12 @@
             <a href="index.html" class="text-zinc-400 hover:text-white">Voltar</a>
         </div>
 
-        <div class="mb-4 flex gap-4 no-print bg-zinc-900 p-4 rounded-xl border border-zinc-800">
-            <div class="flex-1">
+        <div class="mb-4 flex gap-4 no-print bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex-wrap">
+            <div class="flex-1 min-w-[180px]">
                 <label class="block text-xs text-zinc-400 mb-1">Buscar (Título ou Artista)</label>
                 <input type="text" id="inputBusca" placeholder="Ex: Forró..." class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500">
             </div>
-            <div class="w-1/3 relative">
+            <div class="w-1/3 relative min-w-[150px]">
                 <label class="block text-xs text-zinc-400 mb-1">Filtrar Prateleira</label>
                 <select id="filterPrateleira" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 appearance-none custom-scrollbar cursor-pointer">
                     <option value="">Prateleira (Todas)</option>
@@ -111,421 +116,352 @@
             </div>
         </div>
 
-        <div class="mb-4 flex gap-2 no-print">
+        <div class="mb-4 flex gap-2 no-print flex-wrap">
             <button id="btnImprimirTodos" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded font-medium transition-colors">Imprimir Visíveis</button>
             <button id="btnSelecionarTodos" class="bg-zinc-700 hover:bg-zinc-600 px-4 py-2 rounded transition-colors">Seleccionar Todos</button>
             <button id="btnImprimirSelecionados" class="bg-emerald-700 hover:bg-emerald-600 px-4 py-2 rounded transition-colors">Imprimir Seleccionados</button>
+            <button id="btnAgruparCompacto" class="bg-amber-700 hover:bg-amber-600 px-4 py-2 rounded transition-colors">📦 Agrupar selecionados como Compacto</button>
         </div>
 
-        <div id="listaProdutos" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <!-- Lista de produtos -->
+        <div id="listaProdutos" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <div class="col-span-full text-zinc-500 py-4 text-center">
                 A carregar catálogo completo, por favor aguarde...
             </div>
         </div>
+
+        <!-- Área de grupos compactos -->
+        <div class="no-print mt-8 border-t border-zinc-800 pt-6">
+            <h2 class="text-xl font-semibold mb-3 flex items-center gap-2">📀 Grupos Compactos <span class="text-xs text-zinc-400">(produtos na mesma caixa/fita)</span></h2>
+            <div id="listaGrupos" class="space-y-3">
+                <div class="text-zinc-500 text-sm">Nenhum grupo criado ainda. Selecione produtos e clique em "Agrupar como Compacto".</div>
+            </div>
+        </div>
+
         <div id="areaImpressao" class="print-area hidden"></div>
     </div>
 
     <script type="module">
-
     import { supabase } from './js/supabase-client.js';
 
     let produtos = [];
+    let gruposCompactos = []; // { id, nome, produtosIds, tituloGerado }
+
+    // Carregar grupos do localStorage
+    function carregarGruposLocal() {
+        const stored = localStorage.getItem('somax_grupos_compactos');
+        if (stored) {
+            gruposCompactos = JSON.parse(stored);
+        } else {
+            gruposCompactos = [];
+        }
+        renderizarGrupos();
+    }
+
+    function salvarGruposLocal() {
+        localStorage.setItem('somax_grupos_compactos', JSON.stringify(gruposCompactos));
+        renderizarGrupos();
+    }
 
     async function carregarProdutos() {
-
         let todosOsDados = [];
-
         const limite = 1000;
-
         let offset = 0;
-
         let temMais = true;
 
         try {
-
             while (temMais) {
-
                 const { data, error } = await supabase
                     .from('catalogo')
-                    .select(`
-                        id,
-                        titulo,
-                        artista,
-                        prateleira,
-                        numero
-                    `)
+                    .select(`id, titulo, artista, prateleira, numero`)
                     .order('id')
                     .range(offset, offset + limite - 1);
 
                 if (error) {
-
                     console.error(error);
-
                     alert('Erro ao carregar produtos.');
-
                     return;
                 }
 
-                todosOsDados =
-                    todosOsDados.concat(data || []);
-
+                todosOsDados = todosOsDados.concat(data || []);
                 if (!data || data.length < limite) {
-
                     temMais = false;
-
                 } else {
-
                     offset += limite;
                 }
             }
 
             produtos = todosOsDados;
-
             popularSelectPrateleiras();
-
             renderizarLista();
-
+            carregarGruposLocal(); // após ter produtos
         } catch (err) {
-
             console.error(err);
-
             alert('Erro inesperado ao carregar catálogo.');
         }
     }
 
     function popularSelectPrateleiras() {
-
-        const select =
-            document.getElementById('filterPrateleira');
-
+        const select = document.getElementById('filterPrateleira');
         if (!select) return;
-
-        select.innerHTML =
-            '<option value="">Todas as prateleiras</option>';
-
-        const prateleirasUnicas = [
-            ...new Set(
-                produtos
-                    .map(p => p.prateleira)
-                    .filter(p => p)
-            )
-        ];
-
+        select.innerHTML = '<option value="">Todas as prateleiras</option>';
+        const prateleirasUnicas = [...new Set(produtos.map(p => p.prateleira).filter(p => p))];
         prateleirasUnicas.sort();
-
         prateleirasUnicas.forEach(prat => {
-
-            const option =
-                document.createElement('option');
-
+            const option = document.createElement('option');
             option.value = prat;
-
-            option.textContent =
-                `Prateleira ${prat}`;
-
+            option.textContent = `Prateleira ${prat}`;
             select.appendChild(option);
         });
     }
 
     function renderizarLista() {
-
-        const termoBusca =
-            document
-                .getElementById('inputBusca')
-                .value
-                .toLowerCase();
-
-        const prateleiraSelecionada =
-            document
-                .getElementById('filterPrateleira')
-                .value;
+        const termoBusca = document.getElementById('inputBusca').value.toLowerCase();
+        const prateleiraSelecionada = document.getElementById('filterPrateleira').value;
 
         const produtosFiltrados = produtos.filter(prod => {
-
-            const titulo =
-                (prod.titulo || '').toLowerCase();
-
-            const artista =
-                (prod.artista || '').toLowerCase();
-
-            const numero =
-                (prod.numero || '').toLowerCase();
-
-            const matchBusca =
-                titulo.includes(termoBusca) ||
-                artista.includes(termoBusca) ||
-                numero.includes(termoBusca);
-
-            const matchPrateleira =
-                prateleiraSelecionada === '' ||
-                prod.prateleira === prateleiraSelecionada;
-
+            const titulo = (prod.titulo || '').toLowerCase();
+            const artista = (prod.artista || '').toLowerCase();
+            const numero = (prod.numero || '').toLowerCase();
+            const matchBusca = titulo.includes(termoBusca) || artista.includes(termoBusca) || numero.includes(termoBusca);
+            const matchPrateleira = prateleiraSelecionada === '' || prod.prateleira === prateleiraSelecionada;
             return matchBusca && matchPrateleira;
         });
 
-        const container =
-            document.getElementById('listaProdutos');
-
+        const container = document.getElementById('listaProdutos');
         if (!container) return;
-
         container.innerHTML = '';
 
         if (produtosFiltrados.length === 0) {
-
-            container.innerHTML = `
-                <div class="col-span-full text-zinc-500 py-10 text-center">
-                    Nenhum produto encontrado com estes filtros.
-                </div>
-            `;
-
+            container.innerHTML = `<div class="col-span-full text-zinc-500 py-10 text-center">Nenhum produto encontrado com estes filtros.</div>`;
             return;
         }
 
         produtosFiltrados.forEach(prod => {
-
-            const idFormatado =
-                String(prod.id).padStart(8, '0');
-
-            const card =
-                document.createElement('div');
-
-            card.className = `
-                bg-zinc-900
-                p-3
-                rounded-xl
-                border
-                border-zinc-800
-                flex
-                flex-col
-                justify-between
-                hover:border-indigo-500/40
-                transition-all
-            `;
-
-            const numTape =
-                prod.numero
-                    ? `Nº ${prod.numero}`
-                    : 'S/N';
-
+            const idFormatado = String(prod.id).padStart(8, '0');
+            const card = document.createElement('div');
+            card.className = `bg-zinc-900 p-3 rounded-xl border border-zinc-800 flex flex-col justify-between hover:border-indigo-500/40 transition-all`;
+            const numTape = prod.numero ? `Nº ${prod.numero}` : 'S/N';
             card.innerHTML = `
                 <div class="flex items-start gap-2 mb-2">
-
-                    <input
-                        type="checkbox"
-                        class="sel-produto mt-1"
-                        data-id="${prod.id}"
-                    >
-
+                    <input type="checkbox" class="sel-produto mt-1" data-id="${prod.id}">
                     <div class="min-w-0">
-
-                        <div class="font-bold text-sm leading-tight mb-1 break-words">
-                            ${prod.titulo || 'Sem título'}
-                        </div>
-
-                        <div class="text-xs text-zinc-400 break-words">
-                            ${prod.artista || 'Sem artista'}
-                        </div>
-
-                        <div class="text-xs font-mono text-indigo-400 mt-1">
-                            Local: ${prod.prateleira || '—'}
-                            |
-                            Tape: ${numTape}
-                        </div>
-
+                        <div class="font-bold text-sm leading-tight mb-1 break-words">${prod.titulo || 'Sem título'}</div>
+                        <div class="text-xs text-zinc-400 break-words">${prod.artista || 'Sem artista'}</div>
+                        <div class="text-xs font-mono text-indigo-400 mt-1">Local: ${prod.prateleira || '—'} | Tape: ${numTape}</div>
                     </div>
-
                 </div>
-
-                <div
-                    id="preview-${prod.id}"
-                    class="mt-2 flex justify-center bg-white p-1 rounded"
-                ></div>
+                <div id="preview-${prod.id}" class="mt-2 flex justify-center bg-white p-1 rounded"></div>
             `;
-
             container.appendChild(card);
-
             gerarCodigoUnico(prod.id, idFormatado);
         });
     }
 
     function gerarCodigoUnico(prodId, codigoTexto) {
-
-        const previewDiv =
-            document.getElementById(`preview-${prodId}`);
-
+        const previewDiv = document.getElementById(`preview-${prodId}`);
         if (!previewDiv) return;
-
         previewDiv.innerHTML = '';
-
-        const canvas =
-            document.createElement('canvas');
-
+        const canvas = document.createElement('canvas');
         previewDiv.appendChild(canvas);
-
         JsBarcode(canvas, codigoTexto, {
-
             format: "CODE128",
-
             width: 1,
-
             height: 25,
-
             displayValue: true,
-
             fontSize: 12,
-
             margin: 2
         });
-
         canvas.style.height = '30px';
-
         canvas.style.width = 'auto';
     }
 
-    function gerarTodosParaImpressao(idsSelecionados) {
+    function gerarCodigoParaGrupo(grupoId, codigoTexto, elementoCanvas) {
+        JsBarcode(elementoCanvas, codigoTexto, {
+            format: "CODE128",
+            width: 1.2,
+            height: 30,
+            displayValue: true,
+            fontSize: 11,
+            margin: 2
+        });
+    }
 
-        const area =
-            document.getElementById('areaImpressao');
+    function renderizarGrupos() {
+        const container = document.getElementById('listaGrupos');
+        if (!container) return;
 
-        if (!area) return;
+        if (gruposCompactos.length === 0) {
+            container.innerHTML = '<div class="text-zinc-500 text-sm">Nenhum grupo criado ainda. Selecione produtos e clique em "Agrupar como Compacto".</div>';
+            return;
+        }
 
-        area.innerHTML = '';
+        container.innerHTML = '';
+        gruposCompactos.forEach((grupo, idx) => {
+            const produtosDoGrupo = produtos.filter(p => grupo.produtosIds.includes(p.id));
+            const descricaoResumida = produtosDoGrupo.map(p => `${p.titulo || '?'} (${p.numero || 'S/N'})`).join(', ');
+            const grupoIdStr = `CMP-${String(grupo.id).padStart(5, '0')}`;
+            
+            const divGrupo = document.createElement('div');
+            divGrupo.className = 'group-card bg-zinc-900/60 rounded-lg p-3 border border-zinc-700 flex flex-wrap items-center justify-between gap-3';
+            divGrupo.innerHTML = `
+                <div class="flex-1 min-w-[200px]">
+                    <div class="text-sm font-mono text-emerald-400">${grupoIdStr}</div>
+                    <div class="text-xs text-zinc-300 mt-1 max-h-20 overflow-y-auto custom-scrollbar">${descricaoResumida}</div>
+                    <div class="text-xs text-zinc-500 mt-1">${produtosDoGrupo.length} produto(s)</div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div id="preview-grupo-${grupo.id}" class="bg-white p-1 rounded flex items-center justify-center" style="min-width: 120px;"></div>
+                    <button class="btn-imprimir-grupo bg-indigo-800 hover:bg-indigo-700 text-xs px-3 py-1 rounded" data-grupo-id="${grupo.id}">🖨️ Imprimir código do grupo</button>
+                    <button class="btn-remover-grupo bg-red-900/50 hover:bg-red-800 text-xs px-2 py-1 rounded" data-grupo-id="${grupo.id}">✖</button>
+                </div>
+            `;
+            container.appendChild(divGrupo);
 
-        area.classList.remove('hidden');
-
-        const produtosParaImprimir =
-            produtos.filter(p =>
-                idsSelecionados.includes(p.id)
-            );
-
-        produtosParaImprimir.forEach(prod => {
-
-            const codigo =
-                String(prod.id).padStart(8, '0');
-
-            const card =
-                document.createElement('div');
-
-            card.className = 'barcode-card';
-
-            const canvas =
-                document.createElement('canvas');
-
-            card.appendChild(canvas);
-
-            const label =
-                document.createElement('div');
-
-            label.className = 'label';
-
-            const numTape =
-                prod.numero
-                    ? `Nº ${prod.numero}`
-                    : 'S/N';
-
-            label.innerText =
-                `${prod.titulo || 'Sem título'} - ${prod.artista || 'Sem artista'} | ${numTape}`;
-
-            card.appendChild(label);
-
-            area.appendChild(card);
-
-            JsBarcode(canvas, codigo, {
-
-                format: "CODE128",
-
-                width: 1.2,
-
-                height: 30,
-
-                displayValue: false,
-
-                margin: 0
-            });
+            // Gerar código no preview do grupo
+            const previewDiv = document.getElementById(`preview-grupo-${grupo.id}`);
+            if (previewDiv) {
+                previewDiv.innerHTML = '';
+                const canvas = document.createElement('canvas');
+                previewDiv.appendChild(canvas);
+                gerarCodigoParaGrupo(grupo.id, grupoIdStr, canvas);
+                canvas.style.height = '35px';
+                canvas.style.width = 'auto';
+            }
         });
 
+        // Eventos para os botões dos grupos
+        document.querySelectorAll('.btn-imprimir-grupo').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const grupoId = parseInt(btn.dataset.grupoId);
+                const grupo = gruposCompactos.find(g => g.id === grupoId);
+                if (grupo) imprimirCodigoGrupo(grupo);
+            });
+        });
+        document.querySelectorAll('.btn-remover-grupo').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const grupoId = parseInt(btn.dataset.grupoId);
+                gruposCompactos = gruposCompactos.filter(g => g.id !== grupoId);
+                salvarGruposLocal();
+            });
+        });
+    }
+
+    function criarGrupoCompacto(produtosIdsSelecionados) {
+        if (produtosIdsSelecionados.length < 2) {
+            alert('Selecione pelo menos 2 produtos para formar um grupo compacto.');
+            return false;
+        }
+        // Verificar se algum produto já pertence a algum grupo (evitar duplicação)
+        const todosIdsEmGrupos = new Set(gruposCompactos.flatMap(g => g.produtosIds));
+        const conflito = produtosIdsSelecionados.some(id => todosIdsEmGrupos.has(id));
+        if (conflito) {
+            alert('Um ou mais produtos selecionados já pertencem a um grupo compacto. Remova-os do grupo atual antes de recriar.');
+            return false;
+        }
+        const novoId = Date.now();
+        const novoGrupo = {
+            id: novoId,
+            produtosIds: [...produtosIdsSelecionados],
+            criadoEm: new Date().toISOString()
+        };
+        gruposCompactos.push(novoGrupo);
+        salvarGruposLocal();
+        alert(`Grupo compacto criado com ${produtosIdsSelecionados.length} produtos.`);
+        return true;
+    }
+
+    function imprimirCodigoGrupo(grupo) {
+        const produtosDoGrupo = produtos.filter(p => grupo.produtosIds.includes(p.id));
+        const grupoIdStr = `CMP-${String(grupo.id).padStart(5, '0')}`;
+        const descricao = produtosDoGrupo.map(p => `${p.titulo || 'Sem título'} - ${p.artista || 'Sem artista'} (Nº ${p.numero || 'S/N'})`).join(' | ');
+        
+        const area = document.getElementById('areaImpressao');
+        area.innerHTML = '';
+        area.classList.remove('hidden');
+        
+        const card = document.createElement('div');
+        card.className = 'barcode-card';
+        const canvas = document.createElement('canvas');
+        card.appendChild(canvas);
+        const label = document.createElement('div');
+        label.className = 'label';
+        label.innerText = `📀 GRUPO COMPACTO: ${descricao}`;
+        card.appendChild(label);
+        area.appendChild(card);
+        
+        JsBarcode(canvas, grupoIdStr, {
+            format: "CODE128",
+            width: 1.2,
+            height: 30,
+            displayValue: true,
+            fontSize: 12,
+            margin: 2
+        });
+        
         setTimeout(() => {
-
             window.print();
-
-            setTimeout(() => {
-                area.classList.add('hidden');
-            }, 500);
-
+            setTimeout(() => area.classList.add('hidden'), 500);
         }, 150);
     }
 
-    document
-        .getElementById('inputBusca')
-        ?.addEventListener(
-            'input',
-            renderizarLista
-        );
-
-    document
-        .getElementById('filterPrateleira')
-        ?.addEventListener(
-            'change',
-            renderizarLista
-        );
-
-    document
-        .getElementById('btnImprimirTodos')
-        ?.addEventListener('click', () => {
-
-            const visiveis = Array
-                .from(
-                    document.querySelectorAll('.sel-produto')
-                )
-                .map(cb => parseInt(cb.dataset.id));
-
-            if (visiveis.length === 0) {
-
-                alert(
-                    'Nenhum produto visível para imprimir.'
-                );
-
-                return;
-            }
-
-            gerarTodosParaImpressao(visiveis);
+    function gerarTodosParaImpressao(idsSelecionados) {
+        const area = document.getElementById('areaImpressao');
+        if (!area) return;
+        area.innerHTML = '';
+        area.classList.remove('hidden');
+        const produtosParaImprimir = produtos.filter(p => idsSelecionados.includes(p.id));
+        produtosParaImprimir.forEach(prod => {
+            const codigo = String(prod.id).padStart(8, '0');
+            const card = document.createElement('div');
+            card.className = 'barcode-card';
+            const canvas = document.createElement('canvas');
+            card.appendChild(canvas);
+            const label = document.createElement('div');
+            label.className = 'label';
+            const numTape = prod.numero ? `Nº ${prod.numero}` : 'S/N';
+            label.innerText = `${prod.titulo || 'Sem título'} - ${prod.artista || 'Sem artista'} | ${numTape}`;
+            card.appendChild(label);
+            area.appendChild(card);
+            JsBarcode(canvas, codigo, {
+                format: "CODE128",
+                width: 1.2,
+                height: 30,
+                displayValue: false,
+                margin: 0
+            });
         });
+        setTimeout(() => {
+            window.print();
+            setTimeout(() => area.classList.add('hidden'), 500);
+        }, 150);
+    }
 
-    document
-        .getElementById('btnSelecionarTodos')
-        ?.addEventListener('click', () => {
-
-            document
-                .querySelectorAll('.sel-produto')
-                .forEach(cb => {
-                    cb.checked = true;
-                });
-        });
-
-    document
-        .getElementById('btnImprimirSelecionados')
-        ?.addEventListener('click', () => {
-
-            const selecionados = Array
-                .from(
-                    document.querySelectorAll('.sel-produto:checked')
-                )
-                .map(cb => parseInt(cb.dataset.id));
-
-            if (selecionados.length === 0) {
-
-                alert(
-                    'Selecione pelo menos um produto.'
-                );
-
-                return;
-            }
-
-            gerarTodosParaImpressao(selecionados);
-        });
+    // Eventos
+    document.getElementById('inputBusca')?.addEventListener('input', renderizarLista);
+    document.getElementById('filterPrateleira')?.addEventListener('change', renderizarLista);
+    document.getElementById('btnImprimirTodos')?.addEventListener('click', () => {
+        const visiveis = Array.from(document.querySelectorAll('.sel-produto')).map(cb => parseInt(cb.dataset.id));
+        if (visiveis.length === 0) { alert('Nenhum produto visível para imprimir.'); return; }
+        gerarTodosParaImpressao(visiveis);
+    });
+    document.getElementById('btnSelecionarTodos')?.addEventListener('click', () => {
+        document.querySelectorAll('.sel-produto').forEach(cb => cb.checked = true);
+    });
+    document.getElementById('btnImprimirSelecionados')?.addEventListener('click', () => {
+        const selecionados = Array.from(document.querySelectorAll('.sel-produto:checked')).map(cb => parseInt(cb.dataset.id));
+        if (selecionados.length === 0) { alert('Selecione pelo menos um produto.'); return; }
+        gerarTodosParaImpressao(selecionados);
+    });
+    document.getElementById('btnAgruparCompacto')?.addEventListener('click', () => {
+        const selecionados = Array.from(document.querySelectorAll('.sel-produto:checked')).map(cb => parseInt(cb.dataset.id));
+        if (selecionados.length < 2) { alert('Selecione pelo menos 2 produtos para formar um grupo compacto.'); return; }
+        criarGrupoCompacto(selecionados);
+        // limpar checkboxes
+        document.querySelectorAll('.sel-produto:checked').forEach(cb => cb.checked = false);
+    });
 
     carregarProdutos();
-
     </script>
 </body>
 </html>
