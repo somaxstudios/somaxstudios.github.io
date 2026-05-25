@@ -12,7 +12,6 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: #18181b; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
 
-        /* Estilo de impressão elegante */
         @media print {
             body * { visibility: hidden; }
             #ficha-impressao, #ficha-impressao * { visibility: visible; }
@@ -22,20 +21,15 @@
                 width: 100%;
                 color: black !important;
                 background: white !important;
-                padding: 40px;
+                padding: 20px;
                 font-family: "Times New Roman", Times, serif;
                 display: block !important;
             }
             .no-print { display: none !important; }
+            .break-page { page-break-before: always; }
         }
-
         #ficha-impressao { display: none; }
-        .studio-border { border: 2px solid black; padding: 20px; }
-        .header-studio { border-bottom: 2px solid black; margin-bottom: 20px; padding-bottom: 10px; }
-        .label-studio { font-weight: bold; text-transform: uppercase; font-size: 10pt; color: #444; }
-        .value-studio { font-size: 13pt; margin-bottom: 10px; border-bottom: 1px dotted #ccc; }
-        
-        /* Animação suave para o botão da câmara */
+        .faixa-item { transition: all 0.2s; }
         .pulse-soft { animation: pulseSoft 2s infinite; }
         @keyframes pulseSoft {
             0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.2); }
@@ -43,19 +37,14 @@
             100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
         }
     </style>
-    <script>
-        tailwind.config = {
-            theme: { extend: { colors: { labelAccent: '#6366f1', labelCard: '#18181b' } } }
-        }
-    </script>
 </head>
 <body class="bg-zinc-950 text-white min-h-screen p-4 flex flex-col items-center">
 
 <div class="w-full max-w-md no-print relative min-h-[90vh]">
     
     <div class="flex justify-between items-center mb-8">
-        <h1 class="text-xl font-bold tracking-wide">Scanner<span class="text-labelAccent">.</span>Somax</h1>
-        <a href="index.html" class="flex items-center gap-2 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 text-xs px-4 py-2 rounded-full transition-colors shadow-lg">
+        <h1 class="text-xl font-bold tracking-wide">Scanner<span class="text-indigo-400">.</span>Somax</h1>
+        <a href="index.html" class="flex items-center gap-2 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 text-xs px-4 py-2 rounded-full transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
             Voltar
         </a>
@@ -63,35 +52,52 @@
 
     <div id="erroCamara" class="hidden bg-red-900/50 border border-red-700 rounded-xl p-3 text-sm text-red-200 mb-4 text-center"></div>
 
+    <!-- Tela inicial -->
     <div id="start-container" class="flex flex-col items-center justify-center py-12 absolute inset-0 mt-20">
-        <button id="btnIniciar" class="w-40 h-40 bg-zinc-900 border-2 border-dashed border-zinc-700 hover:border-labelAccent rounded-[2rem] flex flex-col items-center justify-center transition-all group shadow-2xl relative overflow-hidden pulse-soft">
-            <div class="absolute inset-0 bg-labelAccent/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <svg class="w-16 h-16 text-zinc-500 group-hover:text-labelAccent transition-colors mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <button id="btnIniciar" class="w-40 h-40 bg-zinc-900 border-2 border-dashed border-zinc-700 hover:border-indigo-500 rounded-[2rem] flex flex-col items-center justify-center transition-all group shadow-2xl relative overflow-hidden pulse-soft">
+            <div class="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <svg class="w-16 h-16 text-zinc-500 group-hover:text-indigo-400 transition-colors mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-            <span class="text-xs font-semibold tracking-widest text-zinc-500 group-hover:text-labelAccent uppercase">Tocar para Ler</span>
+            <span class="text-xs font-semibold tracking-widest text-zinc-500 group-hover:text-indigo-400 uppercase">Tocar para Ler</span>
         </button>
         <p class="mt-8 text-center text-sm text-zinc-500 max-w-[250px] leading-relaxed">
-            Aponte a câmara para o código de barras na lombada do Tape para abrir a ficha técnica.
+            Aponte para o código de barras do Tape ou de um grupo compacto.
         </p>
     </div>
 
+    <!-- Leitor -->
     <div id="reader-container" class="hidden">
         <div class="flex justify-between items-center mb-4">
             <span class="text-sm text-zinc-400">A focar código...</span>
             <button onclick="reiniciarLeitor()" class="text-xs bg-zinc-800 px-3 py-1 rounded-full text-zinc-300">Cancelar</button>
         </div>
-        <div id="reader" class="bg-labelCard border border-zinc-800 rounded-2xl p-2 shadow-2xl overflow-hidden"></div>
+        <div id="reader" class="bg-zinc-900 border border-zinc-800 rounded-2xl p-2 shadow-2xl overflow-hidden"></div>
     </div>
 
-    <div id="resultado" class="hidden bg-labelCard border border-zinc-800 rounded-xl p-6 shadow-xl mb-6 mt-4 relative z-10">
+    <!-- Seleção de grupo compacto (quando escaneia um código CMP-xxx) -->
+    <div id="grupo-container" class="hidden bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-4">
+        <div class="flex justify-between items-center border-b border-zinc-800 pb-2 mb-3">
+            <h3 class="font-bold">📦 Grupo Compacto</h3>
+            <button id="btnFecharGrupo" class="text-xs text-zinc-400 hover:text-white">✖ Fechar</button>
+        </div>
+        <p class="text-sm text-zinc-300 mb-2" id="grupo-descricao"></p>
+        <label class="block text-xs text-zinc-500 mb-1">Selecione o Tape para ver a ficha:</label>
+        <select id="select-produto-grupo" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm mb-3">
+            <option value="">Carregando...</option>
+        </select>
+        <button id="btnAbrirProdutoGrupo" class="w-full bg-indigo-600 py-2 rounded-lg text-sm font-medium">Abrir Ficha Técnica</button>
+    </div>
+
+    <!-- Ficha técnica do produto individual -->
+    <div id="resultado" class="hidden bg-zinc-900 border border-zinc-800 rounded-xl p-5 shadow-xl mb-6 mt-4 relative z-10">
         <div class="flex justify-between items-start border-b border-zinc-800 pb-4 mb-4">
             <div>
-                <span class="text-xs font-mono text-labelAccent bg-labelAccent/10 px-2 py-1 rounded" id="res-id">ID: 000</span>
+                <span class="text-xs font-mono text-indigo-400 bg-indigo-400/10 px-2 py-1 rounded" id="res-id">ID: 000</span>
                 <h2 class="text-xl font-bold mt-2" id="res-titulo">Carregando...</h2>
                 <p class="text-zinc-400 text-sm" id="res-artista">...</p>
-                <p class="text-zinc-500 text-xs mt-1" id="res-local">Local: - | Tape: -</p>
+                <p class="text-zinc-500 text-xs mt-1" id="res-local">Tape: -</p>
             </div>
             <button onclick="prepararImpressao()" class="bg-zinc-800 hover:bg-zinc-700 p-3 rounded-xl transition-colors" title="Imprimir Ficha Técnica">
                 🖨️
@@ -103,496 +109,485 @@
             <button id="btnToggleEdit" class="text-xs bg-zinc-800 hover:bg-zinc-700 px-3 py-1 rounded transition-colors">✏️ Editar</button>
         </div>
 
-        <form id="formFicha" class="space-y-3">
+        <form id="formFicha" class="space-y-4">
+            <!-- Intérprete / Artista principal -->
             <div>
-                <label class="block text-xs text-zinc-500 mb-1">Intérprete</label>
-                <input type="text" id="in_interprete" class="ficha-input w-full bg-transparent border-b border-zinc-800 focus:border-labelAccent py-1 text-sm disabled:text-white disabled:border-transparent outline-none" disabled>
+                <label class="block text-xs text-zinc-500 mb-1">Intérprete / Artista</label>
+                <input type="text" id="in_interprete" class="ficha-input w-full bg-transparent border-b border-zinc-800 py-1 text-sm disabled:text-white disabled:border-transparent outline-none" disabled>
             </div>
+
+            <!-- Género e Tipo -->
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-xs text-zinc-500 mb-1">Gênero</label>
+                    <label class="block text-xs text-zinc-500 mb-1">Género</label>
                     <input type="text" id="in_genero" class="ficha-input w-full bg-transparent border-b border-zinc-800 py-1 text-sm disabled:text-white disabled:border-transparent outline-none" disabled>
                 </div>
                 <div>
                     <label class="block text-xs text-zinc-500 mb-1">Tipo</label>
                     <select id="in_tipo" class="ficha-input w-full bg-transparent border-b border-zinc-800 py-1 text-sm disabled:text-white disabled:border-transparent appearance-none outline-none" disabled>
                         <option value="" class="bg-zinc-900">Selecione...</option>
-                        <option value="Artístico" class="bg-zinc-900">Artístico</option>
-                        <option value="Licenciado" class="bg-zinc-900">Licenciado</option>
-                        <option value="Instrumental" class="bg-zinc-900">Instrumental</option>
-                        <option value="Internacional" class="bg-zinc-900">Internacional</option>
+                        <option value="Artístico">Artístico</option>
+                        <option value="Licenciado">Licenciado</option>
+                        <option value="Instrumental">Instrumental</option>
+                        <option value="Internacional">Internacional</option>
                     </select>
                 </div>
             </div>
+
+            <!-- Músicos / Participações especiais (geral) -->
             <div>
-                <label class="block text-xs text-zinc-500 mb-1">Compositores</label>
-                <input type="text" id="in_compositores" class="ficha-input w-full bg-transparent border-b border-zinc-800 py-1 text-sm disabled:text-white disabled:border-transparent outline-none" disabled>
-            </div>
-            <div>
-                <label class="block text-xs text-zinc-500 mb-1">Músicos</label>
+                <label class="block text-xs text-zinc-500 mb-1">Músicos / Participações (Feat.)</label>
                 <input type="text" id="in_musicos" class="ficha-input w-full bg-transparent border-b border-zinc-800 py-1 text-sm disabled:text-white disabled:border-transparent outline-none" disabled>
+                <p class="text-[10px] text-zinc-600 mt-1">Ex: Banda X, Participação especial de Y, etc.</p>
             </div>
+
+            <!-- Lista dinâmica de Faixas -->
             <div>
-                <label class="block text-xs text-zinc-500 mb-1">Faixas</label>
-                <textarea id="in_faixas" rows="3" class="ficha-input custom-scrollbar w-full bg-transparent border border-zinc-800 rounded p-2 text-sm disabled:text-white disabled:border-transparent outline-none disabled:resize-none" disabled></textarea>
+                <div class="flex justify-between items-center mb-2">
+                    <label class="block text-xs text-zinc-500">Faixas / Músicas</label>
+                    <button type="button" id="btnAdicionarFaixa" class="text-xs bg-indigo-800/40 hover:bg-indigo-700 px-2 py-1 rounded disabled:opacity-50" disabled>➕ Adicionar faixa</button>
+                </div>
+                <div id="lista-faixas" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
+                    <!-- as faixas serão inseridas aqui dinamicamente -->
+                    <div class="text-center text-zinc-500 text-xs py-2">Nenhuma faixa adicionada.</div>
+                </div>
             </div>
-            <button type="submit" id="btnSalvar" class="hidden w-full mt-4 bg-emerald-600 py-3 font-medium rounded-xl hover:bg-emerald-500 transition-colors">💾 Guardar Ficha</button>
+
+            <button type="submit" id="btnSalvar" class="hidden w-full mt-2 bg-emerald-600 py-3 font-medium rounded-xl hover:bg-emerald-500 transition-colors">💾 Guardar Ficha</button>
         </form>
 
         <button id="btnReiniciar" class="w-full mt-6 border border-zinc-800 hover:bg-zinc-800 text-white font-medium py-3 px-4 rounded-xl transition-colors">
-            Escanear Outra Fita
+            Escanear Outro Código
         </button>
     </div>
 </div>
 
+<!-- Área de impressão (estilo catálogo) -->
 <div id="ficha-impressao">
-    <div class="studio-border">
-        <div class="header-studio text-center">
-            <h1 style="font-size: 28pt; margin: 0; letter-spacing: 2px;">CATÁLOGO POLYMUSIC</h1>
-            <p style="text-transform: uppercase; font-size: 10pt; letter-spacing: 5px; margin-top: 5px;">Relatório de Arquivo Técnico - Master Tapes</p>
+    <div style="max-width: 800px; margin: 0 auto; padding: 20px; font-family: 'Times New Roman', serif;">
+        <div style="text-align: center; border-bottom: 2px solid black; margin-bottom: 20px;">
+            <h1 style="font-size: 24pt; margin: 0;">CATÁLOGO POLYMUSIC</h1>
+            <p style="font-size: 10pt; letter-spacing: 3px;">Ficha Técnica - Master Tape</p>
         </div>
 
-        <div style="display: grid; grid-template-cols: 1fr 1fr; gap: 40px;">
-            <div>
-                <div class="label-studio">Título da Obra</div>
-                <div class="value-studio" id="prt-titulo">---</div>
-
-                <div class="label-studio">Intérprete / Artista</div>
-                <div class="value-studio" id="prt-artista">---</div>
-
-                <div class="label-studio">Gênero Musical</div>
-                <div class="value-studio" id="prt-genero">---</div>
-            </div>
-            <div style="border-left: 1px solid #000; padding-left: 20px;">
-                <div style="display: flex; justify-content: space-between;">
-                    <div>
-                        <div class="label-studio">Identificação ID</div>
-                        <div class="value-studio" id="prt-id">000</div>
-                    </div>
-                    <div>
-                        <div class="label-studio">Nº do Tape</div>
-                        <div class="value-studio" id="prt-numero">---</div>
-                    </div>
-                </div>
-                <div class="label-studio">Localização (Prateleira)</div>
-                <div class="value-studio" id="prt-local">---</div>
-                
-                <div class="label-studio">Classificação</div>
-                <div class="value-studio" id="prt-tipo">---</div>
-            </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+            <div><strong>ID do Tape:</strong> <span id="prt-id">---</span></div>
+            <div><strong>Nº do Tape:</strong> <span id="prt-numero">---</span></div>
         </div>
 
-        <div style="margin-top: 30px;">
-            <div class="label-studio">Compositores / Autores</div>
-            <div class="value-studio" id="prt-compositores">---</div>
+        <div style="margin-bottom: 15px;">
+            <div><strong>Título:</strong> <span id="prt-titulo">---</span></div>
+            <div><strong>Intérprete:</strong> <span id="prt-artista">---</span></div>
+            <div><strong>Género:</strong> <span id="prt-genero">---</span></div>
+            <div><strong>Tipo:</strong> <span id="prt-tipo">---</span></div>
+            <div><strong>Músicos / Participações:</strong> <span id="prt-musicos">---</span></div>
         </div>
 
-        <div style="margin-top: 10px;">
-            <div class="label-studio">Músicos / Orquestração</div>
-            <div class="value-studio" id="prt-musicos">---</div>
+        <div style="margin-top: 25px;">
+            <h3 style="border-bottom: 1px solid black; margin-bottom: 10px;">Lista de Faixas</h3>
+            <div id="prt-faixas" style="font-size: 11pt;"></div>
         </div>
 
-        <div style="margin-top: 30px;">
-            <div class="label-studio" style="border-bottom: 1px solid black; margin-bottom: 10px;">Conteúdo Programático (Faixas)</div>
-            <div id="prt-faixas" style="white-space: pre-wrap; font-family: monospace; font-size: 11pt; line-height: 1.6;"></div>
-        </div>
-
-        <div style="margin-top: 50px; display: flex; justify-content: space-between; font-size: 9pt; border-top: 1px solid #000; padding-top: 10px;">
-            <div>Gerado em: <span id="prt-data">--/--/----</span></div>
-            <div style="text-align: right; font-style: italic;">Documento Oficial de Controle Interno - Polymusic Studios</div>
+        <div style="margin-top: 40px; font-size: 9pt; text-align: center; border-top: 1px solid #ccc; padding-top: 10px;">
+            Documento gerado em <span id="prt-data"></span> - Somax Arquivo
         </div>
     </div>
 </div>
 
 <script type="module">
-
 import { supabase } from './js/supabase-client.js';
 
 let html5QrCode = null;
 let scanning = false;
-let idAtual = null;
+let idAtual = null;          // ID do produto (tape) atual
 let isEditing = false;
-
 let dadosCarregados = {
     catalogo: {},
-    ficha: {}
+    ficha: { faixas: [] }    // faixas será um array de objetos
 };
 
-const startContainer = document.getElementById('start-container');
-const readerContainer = document.getElementById('reader-container');
-const resultadoDiv = document.getElementById('resultado');
-const erroDiv = document.getElementById('erroCamara');
-
-function mostrarErro(msg) {
-    erroDiv.innerText = msg;
-    erroDiv.classList.remove('hidden');
-
-    setTimeout(() => {
-        erroDiv.classList.add('hidden');
-    }, 5000);
+// Carregar grupos compactos do localStorage (mesmo formato usado em gerar_codigos.html)
+function carregarGruposCompactos() {
+    const stored = localStorage.getItem('somax_grupos_compactos');
+    if (stored) {
+        try {
+            return JSON.parse(stored);
+        } catch(e) { return []; }
+    }
+    return [];
 }
 
-async function iniciarLeitor() {
-    if (scanning) return;
+// Extrair ID do grupo a partir de um código como "CMP-12345"
+function extrairIdGrupo(codigo) {
+    const match = codigo.match(/^CMP-(\d+)$/i);
+    if (match) return parseInt(match[1], 10);
+    return null;
+}
 
-    startContainer.classList.add('hidden');
-    startContainer.classList.remove('flex');
+// Buscar produtos de um grupo
+async function buscarProdutosDoGrupo(grupoId) {
+    const grupos = carregarGruposCompactos();
+    const grupo = grupos.find(g => g.id === grupoId);
+    if (!grupo || !grupo.produtosIds || grupo.produtosIds.length === 0) return [];
+    
+    const ids = grupo.produtosIds.map(id => Number(id));
+    const { data, error } = await supabase
+        .from('catalogo')
+        .select('id, titulo, artista, numero, prateleira')
+        .in('id', ids);
+    if (error) {
+        console.error(error);
+        return [];
+    }
+    return data;
+}
 
-    resultadoDiv.classList.add('hidden');
-    erroDiv.classList.add('hidden');
-
-    readerContainer.classList.remove('hidden');
-
-    html5QrCode = new Html5Qrcode("reader");
-
+// Após escanear um código (pode ser ID numérico ou CMP-xxxx)
+async function onScanSuccess(decodedText) {
+    if (!scanning) return;
     try {
-
-        scanning = true;
-
-        await html5QrCode.start(
-            { facingMode: "environment" },
-
-            {
-                fps: 10,
-                qrbox: {
-                    width: 250,
-                    height: 100
-                },
-                formatsToSupport: [
-                    Html5QrcodeSupportedFormats.CODE_128
-                ]
-            },
-
-            onScanSuccess,
-
-            () => {
-                // ignora falhas de frame
+        if (html5QrCode) await html5QrCode.stop().catch(e => console.warn(e));
+        scanning = false;
+        readerContainer.classList.add('hidden');
+        
+        // Verificar se é código de grupo compacto
+        const grupoId = extrairIdGrupo(decodedText);
+        if (grupoId !== null) {
+            // Abrir seletor de grupo
+            const produtosGrupo = await buscarProdutosDoGrupo(grupoId);
+            if (produtosGrupo.length === 0) {
+                mostrarErro("Grupo compacto não encontrado ou sem produtos.");
+                reiniciarLeitor();
+                return;
             }
-        );
-
+            exibirSeletorGrupo(grupoId, produtosGrupo);
+            return;
+        }
+        
+        // Caso contrário, tratar como ID de produto (tape)
+        const prodId = parseInt(decodedText, 10);
+        if (isNaN(prodId)) {
+            mostrarErro("Código inválido. Use um código de Tape (ex: 00000123) ou grupo (CMP-xxxxx).");
+            reiniciarLeitor();
+            return;
+        }
+        await carregarProdutoIndividual(prodId);
     } catch (err) {
-
         console.error(err);
-
-        mostrarErro(
-            "Erro ao acessar a câmera. Verifique as permissões."
-        );
-
+        mostrarErro("Erro ao processar leitura.");
         reiniciarLeitor();
     }
 }
 
-async function onScanSuccess(decodedText) {
-
-    if (!scanning) return;
-
-    try {
-
-        if (html5QrCode) {
-            await html5QrCode.stop().catch(e => console.warn(e));
-        }
-
-        scanning = false;
-
-        readerContainer.classList.add('hidden');
-        resultadoDiv.classList.remove('hidden');
-
-        idAtual = parseInt(decodedText, 10);
-
-        if (!idAtual || isNaN(idAtual)) {
-            mostrarErro("Código inválido.");
-            return;
-        }
-
-        const resCatalogo = await supabase
-            .from('catalogo')
-            .select('*')
-            .eq('id', idAtual)
-            .single();
-
-        if (resCatalogo.error || !resCatalogo.data) {
-
-            console.error(resCatalogo.error);
-
-            document.getElementById('res-titulo').innerText =
-                "Produto não encontrado";
-
-            document.getElementById('res-artista').innerText = "-";
-            document.getElementById('res-local').innerText = "-";
-
-            return;
-        }
-
-        dadosCarregados.catalogo = resCatalogo.data;
-
-        const resFicha = await supabase
-            .from('ficha_tecnica')
-            .select('*')
-            .eq('catalogo_id', idAtual)
-            .single();
-
-        dadosCarregados.ficha = resFicha.data || {};
-
-        atualizarInterfaceEcra();
-
-        if (isEditing) {
-            toggleEditMode();
-        }
-
-    } catch (err) {
-
-        console.error(err);
-
-        mostrarErro("Erro ao processar leitura.");
+async function carregarProdutoIndividual(prodId) {
+    idAtual = prodId;
+    // Buscar catálogo
+    const { data: catalogo, error: errCat } = await supabase
+        .from('catalogo')
+        .select('*')
+        .eq('id', prodId)
+        .single();
+    if (errCat || !catalogo) {
+        mostrarErro("Produto não encontrado no catálogo.");
+        reiniciarLeitor();
+        return;
     }
+    dadosCarregados.catalogo = catalogo;
+    
+    // Buscar ficha técnica (incluindo faixas como JSON)
+    const { data: ficha, error: errFicha } = await supabase
+        .from('ficha_tecnica')
+        .select('*')
+        .eq('catalogo_id', prodId)
+        .single();
+    
+    if (ficha) {
+        // Se o campo faixas for string JSON, converter; se for texto antigo, adaptar
+        let faixasArray = [];
+        if (ficha.faixas) {
+            try {
+                const parsed = JSON.parse(ficha.faixas);
+                if (Array.isArray(parsed)) faixasArray = parsed;
+                else faixasArray = [{ titulo: ficha.faixas, compositor: '', isrc: '' }];
+            } catch(e) {
+                faixasArray = [{ titulo: ficha.faixas, compositor: '', isrc: '' }];
+            }
+        }
+        dadosCarregados.ficha = {
+            interprete: ficha.interprete || '',
+            genero: ficha.genero || '',
+            tipo_produto: ficha.tipo_produto || '',
+            musicos: ficha.musicos || '',
+            faixas: faixasArray
+        };
+    } else {
+        dadosCarregados.ficha = {
+            interprete: '',
+            genero: '',
+            tipo_produto: '',
+            musicos: '',
+            faixas: []
+        };
+    }
+    
+    // Esconder seletor de grupo se estiver visível
+    document.getElementById('grupo-container')?.classList.add('hidden');
+    resultadoDiv.classList.remove('hidden');
+    atualizarInterfaceEcra();
+    if (isEditing) toggleEditMode();
+}
+
+function exibirSeletorGrupo(grupoId, produtos) {
+    const grupoContainer = document.getElementById('grupo-container');
+    const select = document.getElementById('select-produto-grupo');
+    const descricao = document.getElementById('grupo-descricao');
+    
+    select.innerHTML = '<option value="">Selecione um Tape...</option>';
+    produtos.forEach(prod => {
+        const option = document.createElement('option');
+        option.value = prod.id;
+        option.textContent = `${prod.titulo} (${prod.artista || '?'}) - Tape ${prod.numero || 'S/N'}`;
+        select.appendChild(option);
+    });
+    descricao.textContent = `Grupo com ${produtos.length} fitas. Escolha abaixo para ver a ficha técnica.`;
+    grupoContainer.classList.remove('hidden');
+    resultadoDiv.classList.add('hidden');
+    
+    // Botão abrir
+    const btnAbrir = document.getElementById('btnAbrirProdutoGrupo');
+    const novoBtn = btnAbrir.cloneNode(true);
+    btnAbrir.parentNode.replaceChild(novoBtn, btnAbrir);
+    novoBtn.addEventListener('click', async () => {
+        const selectedId = parseInt(select.value, 10);
+        if (!selectedId) {
+            alert('Selecione um Tape da lista.');
+            return;
+        }
+        grupoContainer.classList.add('hidden');
+        await carregarProdutoIndividual(selectedId);
+    });
+    
+    document.getElementById('btnFecharGrupo').onclick = () => {
+        grupoContainer.classList.add('hidden');
+        reiniciarLeitor();
+    };
 }
 
 function atualizarInterfaceEcra() {
-
     const prod = dadosCarregados.catalogo;
     const ficha = dadosCarregados.ficha;
-
-    document.getElementById('res-id').innerText =
-        `ID: ${prod.id || '-'}`;
-
-    document.getElementById('res-titulo').innerText =
-        prod.titulo || 'Sem título';
-
-    document.getElementById('res-artista').innerText =
-        prod.artista || 'Sem artista';
-
-    document.getElementById('res-local').innerText =
-        `Prateleira: ${prod.prateleira || '-'} | Tape: ${prod.numero || 'S/N'}`;
-
-    document.getElementById('in_interprete').value =
-        ficha.interprete || '';
-
-    document.getElementById('in_genero').value =
-        ficha.genero || '';
-
-    document.getElementById('in_compositores').value =
-        ficha.compositores || '';
-
-    document.getElementById('in_musicos').value =
-        ficha.musicos || '';
-
-    document.getElementById('in_tipo').value =
-        ficha.tipo_produto || '';
-
-    document.getElementById('in_faixas').value =
-        ficha.faixas || '';
+    document.getElementById('res-id').innerText = `ID: ${prod.id || '-'}`;
+    document.getElementById('res-titulo').innerText = prod.titulo || 'Sem título';
+    document.getElementById('res-artista').innerText = prod.artista || 'Sem artista';
+    document.getElementById('res-local').innerText = `Tape: ${prod.numero || 'S/N'}`;
+    document.getElementById('in_interprete').value = ficha.interprete || '';
+    document.getElementById('in_genero').value = ficha.genero || '';
+    document.getElementById('in_tipo').value = ficha.tipo_produto || '';
+    document.getElementById('in_musicos').value = ficha.musicos || '';
+    
+    // Renderizar lista de faixas
+    renderizarListaFaixas(ficha.faixas || []);
 }
 
-window.prepararImpressao = function () {
+function renderizarListaFaixas(faixas) {
+    const container = document.getElementById('lista-faixas');
+    if (!container) return;
+    if (!faixas.length) {
+        container.innerHTML = '<div class="text-center text-zinc-500 text-xs py-2">Nenhuma faixa adicionada.</div>';
+        return;
+    }
+    container.innerHTML = '';
+    faixas.forEach((faixa, idx) => {
+        const div = document.createElement('div');
+        div.className = 'faixa-item bg-zinc-800/40 rounded-lg p-2 border border-zinc-700';
+        div.innerHTML = `
+            <div class="flex justify-between items-start gap-2">
+                <div class="flex-1 space-y-1">
+                    <input type="text" placeholder="Título da faixa" value="${escapeHtml(faixa.titulo || '')}" class="faixa-titulo w-full bg-transparent border-b border-zinc-700 text-sm py-0.5 disabled:opacity-80" disabled>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" placeholder="Compositor(es)" value="${escapeHtml(faixa.compositor || '')}" class="faixa-compositor w-full bg-transparent border-b border-zinc-700 text-xs py-0.5 disabled:opacity-80" disabled>
+                        <input type="text" placeholder="ISRC (opcional)" value="${escapeHtml(faixa.isrc || '')}" class="faixa-isrc w-full bg-transparent border-b border-zinc-700 text-xs py-0.5 disabled:opacity-80" disabled>
+                    </div>
+                </div>
+                <button type="button" class="btn-remover-faixa text-red-400 hover:text-red-300 text-xs p-1" data-idx="${idx}">✖</button>
+            </div>
+            <div class="text-[10px] text-zinc-500 mt-1">Nº ${idx+1}</div>
+        `;
+        container.appendChild(div);
+    });
+    
+    // Se estiver em modo de edição, ativar os campos das faixas
+    if (isEditing) {
+        document.querySelectorAll('.faixa-titulo, .faixa-compositor, .faixa-isrc').forEach(inp => inp.disabled = false);
+        document.querySelectorAll('.btn-remover-faixa').forEach(btn => btn.style.display = 'block');
+    } else {
+        document.querySelectorAll('.faixa-titulo, .faixa-compositor, .faixa-isrc').forEach(inp => inp.disabled = true);
+        document.querySelectorAll('.btn-remover-faixa').forEach(btn => btn.style.display = 'none');
+    }
+    
+    // Adicionar eventos de remoção
+    document.querySelectorAll('.btn-remover-faixa').forEach(btn => {
+        btn.removeEventListener('click', removerFaixaHandler);
+        btn.addEventListener('click', removerFaixaHandler);
+    });
+}
 
-    const prod = dadosCarregados.catalogo;
-    const ficha = dadosCarregados.ficha;
+function removerFaixaHandler(e) {
+    const idx = parseInt(e.currentTarget.dataset.idx, 10);
+    const novasFaixas = [...(dadosCarregados.ficha.faixas || [])];
+    novasFaixas.splice(idx, 1);
+    dadosCarregados.ficha.faixas = novasFaixas;
+    renderizarListaFaixas(novasFaixas);
+}
 
-    document.getElementById('prt-titulo').innerText =
-        (prod.titulo || '').toUpperCase();
-
-    document.getElementById('prt-artista').innerText =
-        (ficha.interprete || prod.artista || '').toUpperCase();
-
-    document.getElementById('prt-genero').innerText =
-        ficha.genero || 'NÃO ESPECIFICADO';
-
-    document.getElementById('prt-id').innerText =
-        prod.id || '-';
-
-    document.getElementById('prt-numero').innerText =
-        prod.numero || '---';
-
-    document.getElementById('prt-local').innerText =
-        prod.prateleira || '---';
-
-    document.getElementById('prt-tipo').innerText =
-        ficha.tipo_produto || 'GERAL';
-
-    document.getElementById('prt-compositores').innerText =
-        ficha.compositores || 'NÃO REGISTRADOS';
-
-    document.getElementById('prt-musicos').innerText =
-        ficha.musicos || 'NÃO REGISTRADOS';
-
-    document.getElementById('prt-faixas').innerText =
-        ficha.faixas || 'Sem tracklist registrada.';
-
-    document.getElementById('prt-data').innerText =
-        new Date().toLocaleDateString('pt-BR');
-
-    window.print();
-};
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
 
 function toggleEditMode() {
-
     isEditing = !isEditing;
-
     const inputs = document.querySelectorAll('.ficha-input');
-
-    const btnSalvar =
-        document.getElementById('btnSalvar');
-
-    inputs.forEach(input => {
-
-        input.disabled = !isEditing;
-
-        if (isEditing) {
-
-            input.classList.add(
-                'bg-zinc-900',
-                'px-2',
-                'rounded'
-            );
-
-        } else {
-
-            input.classList.remove(
-                'bg-zinc-900',
-                'px-2',
-                'rounded'
-            );
-        }
-    });
-
+    const btnSalvar = document.getElementById('btnSalvar');
+    const btnAddFaixa = document.getElementById('btnAdicionarFaixa');
+    
+    inputs.forEach(input => { input.disabled = !isEditing; });
     btnSalvar.classList.toggle('hidden', !isEditing);
+    btnAddFaixa.disabled = !isEditing;
+    
+    // Ativar/desativar campos das faixas
+    document.querySelectorAll('.faixa-titulo, .faixa-compositor, .faixa-isrc').forEach(inp => inp.disabled = !isEditing);
+    document.querySelectorAll('.btn-remover-faixa').forEach(btn => btn.style.display = isEditing ? 'block' : 'none');
+    
+    document.getElementById('btnToggleEdit').innerText = isEditing ? "❌ Cancelar" : "✏️ Editar";
+}
 
-    document.getElementById('btnToggleEdit').innerText =
-        isEditing
-            ? "❌ Cancelar"
-            : "✏️ Editar";
+function adicionarNovaFaixa() {
+    const faixasAtuais = dadosCarregados.ficha.faixas || [];
+    faixasAtuais.push({ titulo: '', compositor: '', isrc: '' });
+    dadosCarregados.ficha.faixas = faixasAtuais;
+    renderizarListaFaixas(faixasAtuais);
 }
 
 async function salvarFicha(e) {
-
     e.preventDefault();
-
-    const btnSalvar =
-        document.getElementById('btnSalvar');
-
+    // Recolher dados actuais dos inputs (incluindo faixas)
+    const faixasAtuais = [];
+    document.querySelectorAll('.faixa-item').forEach((item, idx) => {
+        const titulo = item.querySelector('.faixa-titulo')?.value || '';
+        const compositor = item.querySelector('.faixa-compositor')?.value || '';
+        const isrc = item.querySelector('.faixa-isrc')?.value || '';
+        faixasAtuais.push({ titulo, compositor, isrc });
+    });
+    dadosCarregados.ficha.faixas = faixasAtuais;
+    
+    const dados = {
+        catalogo_id: idAtual,
+        interprete: document.getElementById('in_interprete').value,
+        genero: document.getElementById('in_genero').value,
+        tipo_produto: document.getElementById('in_tipo').value,
+        musicos: document.getElementById('in_musicos').value,
+        faixas: JSON.stringify(dadosCarregados.ficha.faixas)   // guardar como JSON string
+    };
+    
+    const btnSalvar = document.getElementById('btnSalvar');
     btnSalvar.innerText = "Salvando...";
-
-    try {
-
-        const dados = {
-
-            catalogo_id: idAtual,
-
-            interprete:
-                document.getElementById('in_interprete').value,
-
-            genero:
-                document.getElementById('in_genero').value,
-
-            compositores:
-                document.getElementById('in_compositores').value,
-
-            musicos:
-                document.getElementById('in_musicos').value,
-
-            tipo_produto:
-                document.getElementById('in_tipo').value,
-
-            faixas:
-                document.getElementById('in_faixas').value
-        };
-
-        const { error } = await supabase
-            .from('ficha_tecnica')
-            .upsert(
-                dados,
-                {
-                    onConflict: 'catalogo_id'
-                }
-            );
-
-        if (error) {
-
-            console.error(error);
-
-            alert("Erro ao salvar.");
-
-            btnSalvar.innerText =
-                "💾 Guardar Ficha";
-
-            return;
-        }
-
-        btnSalvar.innerText = "✅ Salvo!";
-
-        dadosCarregados.ficha = dados;
-
-        setTimeout(() => {
-
-            toggleEditMode();
-
-            btnSalvar.innerText =
-                "💾 Guardar Ficha";
-
-        }, 800);
-
-    } catch (err) {
-
-        console.error(err);
-
-        alert("Erro inesperado.");
-
-        btnSalvar.innerText =
-            "💾 Guardar Ficha";
+    const { error } = await supabase
+        .from('ficha_tecnica')
+        .upsert(dados, { onConflict: 'catalogo_id' });
+    btnSalvar.innerText = "💾 Guardar Ficha";
+    if (error) {
+        console.error(error);
+        alert("Erro ao salvar ficha.");
+        return;
     }
+    alert("Ficha guardada com sucesso!");
+    toggleEditMode(); // sai do modo edição
 }
 
-window.reiniciarLeitor = async function () {
+// Impressão (sem prateleira)
+window.prepararImpressao = function() {
+    const prod = dadosCarregados.catalogo;
+    const ficha = dadosCarregados.ficha;
+    document.getElementById('prt-id').innerText = prod.id || '-';
+    document.getElementById('prt-numero').innerText = prod.numero || '---';
+    document.getElementById('prt-titulo').innerText = prod.titulo || '---';
+    document.getElementById('prt-artista').innerText = ficha.interprete || prod.artista || '---';
+    document.getElementById('prt-genero').innerText = ficha.genero || '---';
+    document.getElementById('prt-tipo').innerText = ficha.tipo_produto || '---';
+    document.getElementById('prt-musicos').innerText = ficha.musicos || '---';
+    
+    const faixasHtml = (ficha.faixas || []).map((faixa, idx) => {
+        return `<div style="margin-bottom: 12px;">
+                    <strong>${idx+1}. ${faixa.titulo || 'Sem título'}</strong><br>
+                    <span style="font-size: 10pt;">Compositor(es): ${faixa.compositor || '---'}</span><br>
+                    ${faixa.isrc ? `<span style="font-size: 9pt;">ISRC: ${faixa.isrc}</span>` : ''}
+                </div>`;
+    }).join('');
+    document.getElementById('prt-faixas').innerHTML = faixasHtml || '<p>Nenhuma faixa registada.</p>';
+    document.getElementById('prt-data').innerText = new Date().toLocaleDateString('pt-PT');
+    window.print();
+};
 
-    try {
-
-        if (html5QrCode && scanning) {
-
-            await html5QrCode
-                .stop()
-                .catch(e => console.warn(e));
-
-            scanning = false;
-        }
-
-    } catch (err) {
-
-        console.warn(err);
-    }
-
-    idAtual = null;
-
-    if (isEditing) {
-        toggleEditMode();
-    }
-
+// Funções globais de controle
+window.reiniciarLeitor = async function() {
+    if (html5QrCode && scanning) await html5QrCode.stop().catch(e => console.warn(e));
+    scanning = false;
     readerContainer.classList.add('hidden');
-
+    document.getElementById('grupo-container')?.classList.add('hidden');
     resultadoDiv.classList.add('hidden');
-
     startContainer.classList.remove('hidden');
     startContainer.classList.add('flex');
-
+    idAtual = null;
+    if (isEditing) toggleEditMode();
     erroDiv.classList.add('hidden');
 };
 
-document
-    .getElementById('btnIniciar')
-    .addEventListener('click', iniciarLeitor);
+async function iniciarLeitor() {
+    if (scanning) return;
+    startContainer.classList.add('hidden');
+    startContainer.classList.remove('flex');
+    resultadoDiv.classList.add('hidden');
+    document.getElementById('grupo-container')?.classList.add('hidden');
+    erroDiv.classList.add('hidden');
+    readerContainer.classList.remove('hidden');
+    html5QrCode = new Html5Qrcode("reader");
+    try {
+        scanning = true;
+        await html5QrCode.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 250, height: 100 }, formatsToSupport: [Html5QrcodeSupportedFormats.CODE_128] },
+            onScanSuccess,
+            () => {}
+        );
+    } catch (err) {
+        mostrarErro("Erro ao acessar a câmera. Verifique as permissões.");
+        reiniciarLeitor();
+    }
+}
 
-document
-    .getElementById('btnReiniciar')
-    .addEventListener('click', reiniciarLeitor);
+function mostrarErro(msg) {
+    erroDiv.innerText = msg;
+    erroDiv.classList.remove('hidden');
+    setTimeout(() => erroDiv.classList.add('hidden'), 5000);
+}
 
-document
-    .getElementById('btnToggleEdit')
-    .addEventListener('click', toggleEditMode);
+// Eventos
+document.getElementById('btnIniciar')?.addEventListener('click', iniciarLeitor);
+document.getElementById('btnReiniciar')?.addEventListener('click', reiniciarLeitor);
+document.getElementById('btnToggleEdit')?.addEventListener('click', toggleEditMode);
+document.getElementById('formFicha')?.addEventListener('submit', salvarFicha);
+document.getElementById('btnAdicionarFaixa')?.addEventListener('click', adicionarNovaFaixa);
 
-document
-    .getElementById('formFicha')
-    .addEventListener('submit', salvarFicha);
-
+const resultadoDiv = document.getElementById('resultado');
+const erroDiv = document.getElementById('erroCamara');
+const startContainer = document.getElementById('start-container');
+const readerContainer = document.getElementById('reader-container');
 </script>
-
 </body>
 </html>
