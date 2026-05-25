@@ -48,47 +48,79 @@
             border-left: 4px solid #10b981;
         }
 
+        .barcode-card.compacto-card {
+            height: 10mm;
+            max-width: 86mm;
+            align-items: center;
+        }
+
+        .barcode-card.compacto-card .label {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 58mm;
+            font-size: 9px;
+            line-height: 1.2;
+        }
+
         @media print {
             body * { visibility: hidden; }
             .print-area, .print-area * { visibility: visible; }
-            
             .print-area {
                 position: absolute;
                 top: 0; left: 0;
                 width: 100%;
                 display: block !important;
             }
-
+            @page { margin: 4mm; size: auto; }
             .barcode-card {
                 display: inline-flex !important;
+                flex-direction: row !important;
                 align-items: center !important;
-                height: 9mm !important;
+                justify-content: flex-start !important;
                 width: auto !important;
-                padding: 0 4px !important;
+                min-width: 65mm !important;
+                max-width: none !important;
+                height: 12mm !important;
+                min-height: 12mm !important;
                 margin: 2mm !important;
-                border: 0.5px solid #666 !important;
-                border-radius: 0 !important;
-                page-break-inside: avoid;
-                break-inside: avoid;
+                padding: 1mm 3mm !important;
                 background: white !important;
-                color: black !important;
+                border: 1px solid #000 !important;
+                border-radius: 3px !important;
+                overflow: visible !important;
+                page-break-inside: avoid !important;
             }
-
-            .barcode-card canvas {
-                height: 9mm !important;
+            .barcode-card canvas, .barcode-card svg {
+                height: 8mm !important;
                 width: auto !important;
-                margin: 0 !important;
-            }
-
-            .barcode-card .label {
-                font-size: 10pt !important;
-                font-family: monospace;
-                font-weight: bold;
-                white-space: nowrap;
-                margin-left: 8px !important;
+                min-width: 28mm !important;
                 display: block !important;
+                margin: 0 !important;
+                flex-shrink: 0 !important;
             }
-
+            .barcode-card .label {
+                display: block !important;
+                margin-left: 3mm !important;
+                color: black !important;
+                font-size: 7.5pt !important;
+                font-family: monospace !important;
+                font-weight: bold !important;
+                white-space: nowrap !important;
+                overflow: visible !important;
+                max-width: none !important;
+            }
+            .barcode-card:not(.compacto-card) { min-width: 70mm !important; }
+            .barcode-card.compacto-card {
+                min-width: 110mm !important;
+                height: 12mm !important;
+                padding-right: 5mm !important;
+            }
+            .barcode-card.compacto-card canvas { min-width: 40mm !important; }
+            .barcode-card.compacto-card .label { font-size: 7pt !important; white-space: nowrap !important; }
+            .barcode-card.compacto-card .barcode-text,
+            .barcode-card.compacto-card .codigo,
+            .barcode-card.compacto-card small { display: none !important; }
             button, .no-print { display: none !important; }
         }
     </style>
@@ -100,15 +132,19 @@
             <a href="index.html" class="text-zinc-400 hover:text-white">Voltar</a>
         </div>
 
+        <div id="avisoPrateleira" class="mb-4 bg-amber-900/50 border border-amber-700 text-amber-200 px-4 py-3 rounded-lg text-sm hidden">
+            ⚠️ Por favor, selecione uma prateleira no filtro abaixo para visualizar os produtos e grupos.
+        </div>
+
         <div class="mb-4 flex gap-4 no-print bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex-wrap">
             <div class="flex-1 min-w-[180px]">
                 <label class="block text-xs text-zinc-400 mb-1">Buscar (Título ou Artista)</label>
-                <input type="text" id="inputBusca" placeholder="Ex: Forró..." class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500">
+                <input type="text" id="inputBusca" placeholder="Ex: Forró..." class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500" disabled>
             </div>
             <div class="w-1/3 relative min-w-[150px]">
-                <label class="block text-xs text-zinc-400 mb-1">Filtrar Prateleira</label>
+                <label class="block text-xs text-zinc-400 mb-1">Filtrar Prateleira (obrigatório)</label>
                 <select id="filterPrateleira" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 appearance-none custom-scrollbar cursor-pointer">
-                    <option value="">Prateleira (Todas)</option>
+                    <option value="" disabled selected>Selecione uma prateleira</option>
                 </select>
                 <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 pt-5 text-zinc-400">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -117,24 +153,22 @@
         </div>
 
         <div class="mb-4 flex gap-2 no-print flex-wrap">
-            <button id="btnImprimirTodos" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded font-medium transition-colors">Imprimir Visíveis</button>
-            <button id="btnSelecionarTodos" class="bg-zinc-700 hover:bg-zinc-600 px-4 py-2 rounded transition-colors">Seleccionar Todos</button>
-            <button id="btnImprimirSelecionados" class="bg-emerald-700 hover:bg-emerald-600 px-4 py-2 rounded transition-colors">Imprimir Seleccionados</button>
-            <button id="btnAgruparCompacto" class="bg-amber-700 hover:bg-amber-600 px-4 py-2 rounded transition-colors">📦 Agrupar selecionados como Compacto</button>
+            <button id="btnImprimirTodos" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>Imprimir Visíveis</button>
+            <button id="btnSelecionarTodos" class="bg-zinc-700 hover:bg-zinc-600 px-4 py-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>Seleccionar Todos</button>
+            <button id="btnImprimirSelecionados" class="bg-emerald-700 hover:bg-emerald-600 px-4 py-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>Imprimir Seleccionados</button>
+            <button id="btnAgruparCompacto" class="bg-amber-700 hover:bg-amber-600 px-4 py-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>📦 Agrupar selecionados como Compacto</button>
         </div>
 
         <!-- Lista de produtos -->
         <div id="listaProdutos" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div class="col-span-full text-zinc-500 py-4 text-center">
-                A carregar catálogo completo, por favor aguarde...
-            </div>
+            <div class="col-span-full text-zinc-500 py-4 text-center">Carregando catálogo...</div>
         </div>
 
         <!-- Área de grupos compactos -->
         <div class="no-print mt-8 border-t border-zinc-800 pt-6">
             <h2 class="text-xl font-semibold mb-3 flex items-center gap-2">📀 Grupos Compactos <span class="text-xs text-zinc-400">(produtos na mesma caixa/fita)</span></h2>
             <div id="listaGrupos" class="space-y-3">
-                <div class="text-zinc-500 text-sm">Nenhum grupo criado ainda. Selecione produtos e clique em "Agrupar como Compacto".</div>
+                <div class="text-zinc-500 text-sm">Selecione uma prateleira para ver os grupos.</div>
             </div>
         </div>
 
@@ -145,22 +179,160 @@
     import { supabase } from './js/supabase-client.js';
 
     let produtos = [];
-    let gruposCompactos = []; // { id, nome, produtosIds, tituloGerado }
+    let gruposCompactos = [];
+    let prateleiraSelecionada = "";
 
-    // Carregar grupos do localStorage
-    function carregarGruposLocal() {
-        const stored = localStorage.getItem('somax_grupos_compactos');
-        if (stored) {
-            gruposCompactos = JSON.parse(stored);
-        } else {
+    function limparTituloParaGrupo(titulo) {
+        const antesBarra = (titulo || "Sem título").split('/')[0].trim();
+        return antesBarra || "Sem título";
+    }
+
+    function descricaoCompactaGrupo(grupo) {
+        const idsGrupo = (grupo.produtosIds || []).map(Number);
+        const nomes = idsGrupo
+            .map(id => produtos.find(p => Number(p.id) === id))
+            .filter(Boolean)
+            .map(p => limparTituloParaGrupo(p.titulo));
+        return nomes.join(' / ');
+    }
+
+    function getIdsProdutosAgrupados() {
+        return new Set(gruposCompactos.flatMap(g => g.produtosIds || []));
+    }
+
+    function getGruposVisiveis() {
+        if (!prateleiraSelecionada) return [];
+        const termoBusca = document.getElementById('inputBusca').value.toLowerCase();
+        return gruposCompactos.filter(grupo => {
+            const produtosDoGrupo = produtos.filter(p => grupo.produtosIds.includes(Number(p.id)));
+            if (produtosDoGrupo.length === 0) return false;
+            const matchBusca = termoBusca === '' || produtosDoGrupo.some(p => {
+                const titulo = (p.titulo || '').toLowerCase();
+                const artista = (p.artista || '').toLowerCase();
+                const numero = (p.numero || '').toLowerCase();
+                return titulo.includes(termoBusca) || artista.includes(termoBusca) || numero.includes(termoBusca);
+            });
+            const matchPrateleira = produtosDoGrupo.some(p => p.prateleira === prateleiraSelecionada);
+            return matchBusca && matchPrateleira;
+        });
+    }
+
+    // Carregar grupos do Supabase (apenas da prateleira selecionada)
+    async function carregarGruposSupabase() {
+        if (!prateleiraSelecionada) return;
+
+        const { data, error } = await supabase
+            .from('grupos_compactos')
+            .select('*')
+            .eq('prateleira', prateleiraSelecionada)
+            .order('id', { ascending: false });
+
+        if (error) {
+            console.error('Erro detalhado:', error);
+            if (error.code === 'PGRST301' || error.message.includes('permission')) {
+                alert('Erro de permissão na tabela grupos_compactos. Execute as políticas RLS no Supabase.');
+            } else {
+                alert('Erro ao carregar grupos: ' + error.message);
+            }
             gruposCompactos = [];
+            return;
         }
+
+        gruposCompactos = (data || []).map(g => ({
+            id: g.id,
+            codigo: g.codigo,
+            produtosIds: (g.produtos_ids || []).map(Number),
+            descricao: g.descricao,
+            prateleira: g.prateleira
+        }));
+
+        renderizarLista();
         renderizarGrupos();
     }
 
-    function salvarGruposLocal() {
-        localStorage.setItem('somax_grupos_compactos', JSON.stringify(gruposCompactos));
-        renderizarGrupos();
+    // Salvar novo grupo no Supabase
+    async function salvarGrupoSupabase(produtosIds) {
+        const idsNormalizados = produtosIds.map(id => Number(id)).filter(Boolean);
+        const descricao = idsNormalizados
+            .map(id => produtos.find(p => Number(p.id) === id))
+            .filter(Boolean)
+            .map(p => limparTituloParaGrupo(p.titulo))
+            .join(' / ');
+
+        const { data, error } = await supabase
+            .from('grupos_compactos')
+            .insert({
+                codigo: 'TEMP',
+                produtos_ids: idsNormalizados,
+                descricao,
+                prateleira: prateleiraSelecionada
+            })
+            .select()
+            .single();
+
+        if (error) {
+            console.error(error);
+            alert('Erro ao salvar grupo compacto.');
+            return false;
+        }
+
+        const codigoFinal = `CMP-${String(data.id).padStart(8, '0')}`;
+        const { error: updateError } = await supabase
+            .from('grupos_compactos')
+            .update({ codigo: codigoFinal })
+            .eq('id', data.id);
+
+        if (updateError) {
+            console.error(updateError);
+            alert('Grupo criado, mas erro ao gerar código final.');
+            return false;
+        }
+
+        await carregarGruposSupabase();
+        alert('Grupo compacto criado com sucesso.');
+        return true;
+        
+    }
+
+    // Remover grupo do Supabase
+    async function removerGrupoSupabase(grupoId) {
+        const { error } = await supabase
+            .from('grupos_compactos')
+            .delete()
+            .eq('id', grupoId);
+        if (error) {
+            console.error(error);
+            alert('Erro ao excluir grupo.');
+            return false;
+        }
+        await carregarGruposSupabase();
+        return true;
+    }
+
+    // Alterar grupo (editar lista de produtos)
+    async function alterarGrupoSupabase(grupoId, novosIds) {
+        const idsNormalizados = novosIds.map(id => Number(id)).filter(Boolean);
+        const descricao = idsNormalizados
+            .map(id => produtos.find(p => Number(p.id) === id))
+            .filter(Boolean)
+            .map(p => limparTituloParaGrupo(p.titulo))
+            .join(' / ');
+
+        const { error } = await supabase
+            .from('grupos_compactos')
+            .update({
+                produtos_ids: idsNormalizados,
+                descricao
+            })
+            .eq('id', grupoId);
+
+        if (error) {
+            console.error(error);
+            alert('Erro ao alterar grupo.');
+            return false;
+        }
+        await carregarGruposSupabase();
+        return true;
     }
 
     async function carregarProdutos() {
@@ -177,24 +349,14 @@
                     .order('id')
                     .range(offset, offset + limite - 1);
 
-                if (error) {
-                    console.error(error);
-                    alert('Erro ao carregar produtos.');
-                    return;
-                }
-
+                if (error) throw error;
                 todosOsDados = todosOsDados.concat(data || []);
-                if (!data || data.length < limite) {
-                    temMais = false;
-                } else {
-                    offset += limite;
-                }
+                if (!data || data.length < limite) temMais = false;
+                else offset += limite;
             }
-
             produtos = todosOsDados;
             popularSelectPrateleiras();
-            renderizarLista();
-            carregarGruposLocal(); // após ter produtos
+            mostrarMensagemInicial();
         } catch (err) {
             console.error(err);
             alert('Erro inesperado ao carregar catálogo.');
@@ -204,7 +366,7 @@
     function popularSelectPrateleiras() {
         const select = document.getElementById('filterPrateleira');
         if (!select) return;
-        select.innerHTML = '<option value="">Todas as prateleiras</option>';
+        select.innerHTML = '<option value="" disabled selected>Selecione uma prateleira</option>';
         const prateleirasUnicas = [...new Set(produtos.map(p => p.prateleira).filter(p => p))];
         prateleirasUnicas.sort();
         prateleirasUnicas.forEach(prat => {
@@ -215,17 +377,49 @@
         });
     }
 
+    function mostrarMensagemInicial() {
+        const containerProdutos = document.getElementById('listaProdutos');
+        const containerGrupos = document.getElementById('listaGrupos');
+        if (containerProdutos) {
+            containerProdutos.innerHTML = `<div class="col-span-full text-amber-400 py-10 text-center bg-zinc-900/50 rounded-lg border border-amber-800/30">
+                👈 Selecione uma prateleira no filtro acima para começar.
+            </div>`;
+        }
+        if (containerGrupos) {
+            containerGrupos.innerHTML = `<div class="text-zinc-500 text-sm">Selecione uma prateleira para ver os grupos compactos.</div>`;
+        }
+        document.getElementById('btnImprimirTodos').disabled = true;
+        document.getElementById('btnSelecionarTodos').disabled = true;
+        document.getElementById('btnImprimirSelecionados').disabled = true;
+        document.getElementById('btnAgruparCompacto').disabled = true;
+        document.getElementById('inputBusca').disabled = true;
+    }
+
+    function habilitarInterface() {
+        document.getElementById('btnImprimirTodos').disabled = false;
+        document.getElementById('btnSelecionarTodos').disabled = false;
+        document.getElementById('btnImprimirSelecionados').disabled = false;
+        document.getElementById('btnAgruparCompacto').disabled = false;
+        document.getElementById('inputBusca').disabled = false;
+    }
+
     function renderizarLista() {
+        if (!prateleiraSelecionada) {
+            mostrarMensagemInicial();
+            return;
+        }
+
         const termoBusca = document.getElementById('inputBusca').value.toLowerCase();
-        const prateleiraSelecionada = document.getElementById('filterPrateleira').value;
+        const idsAgrupados = getIdsProdutosAgrupados();
 
         const produtosFiltrados = produtos.filter(prod => {
+            if (idsAgrupados.has(Number(prod.id))) return false;
+            if (prod.prateleira !== prateleiraSelecionada) return false;
             const titulo = (prod.titulo || '').toLowerCase();
             const artista = (prod.artista || '').toLowerCase();
             const numero = (prod.numero || '').toLowerCase();
-            const matchBusca = titulo.includes(termoBusca) || artista.includes(termoBusca) || numero.includes(termoBusca);
-            const matchPrateleira = prateleiraSelecionada === '' || prod.prateleira === prateleiraSelecionada;
-            return matchBusca && matchPrateleira;
+            const matchBusca = termoBusca === '' || titulo.includes(termoBusca) || artista.includes(termoBusca) || numero.includes(termoBusca);
+            return matchBusca;
         });
 
         const container = document.getElementById('listaProdutos');
@@ -233,7 +427,7 @@
         container.innerHTML = '';
 
         if (produtosFiltrados.length === 0) {
-            container.innerHTML = `<div class="col-span-full text-zinc-500 py-10 text-center">Nenhum produto encontrado com estes filtros.</div>`;
+            container.innerHTML = `<div class="col-span-full text-zinc-500 py-10 text-center">Nenhum produto individual encontrado nesta prateleira. Os itens que já viraram compacto aparecem na seção de grupos.</div>`;
             return;
         }
 
@@ -265,12 +459,7 @@
         const canvas = document.createElement('canvas');
         previewDiv.appendChild(canvas);
         JsBarcode(canvas, codigoTexto, {
-            format: "CODE128",
-            width: 1,
-            height: 25,
-            displayValue: true,
-            fontSize: 12,
-            margin: 2
+            format: "CODE128", width: 1, height: 25, displayValue: true, fontSize: 12, margin: 2
         });
         canvas.style.height = '30px';
         canvas.style.width = 'auto';
@@ -278,47 +467,52 @@
 
     function gerarCodigoParaGrupo(grupoId, codigoTexto, elementoCanvas) {
         JsBarcode(elementoCanvas, codigoTexto, {
-            format: "CODE128",
-            width: 1.2,
-            height: 30,
-            displayValue: true,
-            fontSize: 11,
-            margin: 2
+            format: "CODE128", width: 1.2, height: 30, displayValue: true, fontSize: 11, margin: 2
         });
     }
 
     function renderizarGrupos() {
+        if (!prateleiraSelecionada) {
+            const containerGrupos = document.getElementById('listaGrupos');
+            if (containerGrupos) containerGrupos.innerHTML = `<div class="text-zinc-500 text-sm">Selecione uma prateleira para ver os grupos compactos.</div>`;
+            return;
+        }
+
         const container = document.getElementById('listaGrupos');
         if (!container) return;
+        const gruposVisiveis = getGruposVisiveis();
 
-        if (gruposCompactos.length === 0) {
-            container.innerHTML = '<div class="text-zinc-500 text-sm">Nenhum grupo criado ainda. Selecione produtos e clique em "Agrupar como Compacto".</div>';
+        if (gruposVisiveis.length === 0) {
+            container.innerHTML = '<div class="text-zinc-500 text-sm">Nenhum grupo compacto nesta prateleira. Selecione produtos e clique em "Agrupar como Compacto".</div>';
             return;
         }
 
         container.innerHTML = '';
-        gruposCompactos.forEach((grupo, idx) => {
-            const produtosDoGrupo = produtos.filter(p => grupo.produtosIds.includes(p.id));
-            const descricaoResumida = produtosDoGrupo.map(p => `${p.titulo || '?'} (${p.numero || 'S/N'})`).join(', ');
-            const grupoIdStr = `CMP-${String(grupo.id).padStart(5, '0')}`;
+        gruposVisiveis.forEach(grupo => {
+            const produtosDoGrupo = produtos.filter(p => grupo.produtosIds.includes(Number(p.id)));
+            const descricaoCompleta = descricaoCompactaGrupo(grupo);
+            const grupoIdStr = grupo.codigo || `CMP-${String(grupo.id).padStart(8, '0')}`;
             
             const divGrupo = document.createElement('div');
             divGrupo.className = 'group-card bg-zinc-900/60 rounded-lg p-3 border border-zinc-700 flex flex-wrap items-center justify-between gap-3';
             divGrupo.innerHTML = `
-                <div class="flex-1 min-w-[200px]">
-                    <div class="text-sm font-mono text-emerald-400">${grupoIdStr}</div>
-                    <div class="text-xs text-zinc-300 mt-1 max-h-20 overflow-y-auto custom-scrollbar">${descricaoResumida}</div>
-                    <div class="text-xs text-zinc-500 mt-1">${produtosDoGrupo.length} produto(s)</div>
+                <div class="flex items-start gap-3 flex-1 min-w-[240px]">
+                    <input type="checkbox" class="sel-grupo mt-1" data-grupo-id="${grupo.id}" checked>
+                    <div class="min-w-0">
+                        <div class="text-sm font-mono text-emerald-400">${grupoIdStr}</div>
+                        <div class="text-xs text-zinc-300 mt-1 max-h-20 overflow-y-auto custom-scrollbar break-words">${descricaoCompleta}</div>
+                        <div class="text-xs text-zinc-500 mt-1">${produtosDoGrupo.length} produto(s) agrupado(s) — não aparecem mais na lista individual</div>
+                    </div>
                 </div>
                 <div class="flex items-center gap-3">
                     <div id="preview-grupo-${grupo.id}" class="bg-white p-1 rounded flex items-center justify-center" style="min-width: 120px;"></div>
                     <button class="btn-imprimir-grupo bg-indigo-800 hover:bg-indigo-700 text-xs px-3 py-1 rounded" data-grupo-id="${grupo.id}">🖨️ Imprimir código do grupo</button>
+                    <button class="btn-editar-grupo bg-amber-800 hover:bg-amber-700 text-xs px-2 py-1 rounded" data-grupo-id="${grupo.id}">✏️ Alterar</button>
                     <button class="btn-remover-grupo bg-red-900/50 hover:bg-red-800 text-xs px-2 py-1 rounded" data-grupo-id="${grupo.id}">✖</button>
                 </div>
             `;
             container.appendChild(divGrupo);
 
-            // Gerar código no preview do grupo
             const previewDiv = document.getElementById(`preview-grupo-${grupo.id}`);
             if (previewDiv) {
                 previewDiv.innerHTML = '';
@@ -330,138 +524,164 @@
             }
         });
 
-        // Eventos para os botões dos grupos
+        // Eventos
         document.querySelectorAll('.btn-imprimir-grupo').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const grupoId = parseInt(btn.dataset.grupoId);
-                const grupo = gruposCompactos.find(g => g.id === grupoId);
+                const grupo = gruposCompactos.find(g => Number(g.id) === grupoId);
                 if (grupo) imprimirCodigoGrupo(grupo);
             });
         });
-        document.querySelectorAll('.btn-remover-grupo').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.btn-editar-grupo').forEach(btn => {
+            btn.addEventListener('click', async () => {
                 const grupoId = parseInt(btn.dataset.grupoId);
-                gruposCompactos = gruposCompactos.filter(g => g.id !== grupoId);
-                salvarGruposLocal();
+                const grupo = gruposCompactos.find(g => Number(g.id) === grupoId);
+                if (!grupo) return;
+                const novosIds = prompt(
+                    'Informe os IDs dos produtos separados por vírgula:',
+                    grupo.produtosIds.join(', ')
+                );
+                if (!novosIds) return;
+                const idsNormalizados = novosIds.split(',').map(id => Number(id.trim())).filter(Boolean);
+                await alterarGrupoSupabase(grupoId, idsNormalizados);
+            });
+        });
+        document.querySelectorAll('.btn-remover-grupo').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const grupoId = parseInt(btn.dataset.grupoId);
+                if (!confirm('Excluir este grupo compacto? Os produtos voltarão para a lista individual.')) return;
+                await removerGrupoSupabase(grupoId);
             });
         });
     }
 
-    function criarGrupoCompacto(produtosIdsSelecionados) {
+    async function criarGrupoCompacto(produtosIdsSelecionados) {
         if (produtosIdsSelecionados.length < 2) {
             alert('Selecione pelo menos 2 produtos para formar um grupo compacto.');
             return false;
         }
-        // Verificar se algum produto já pertence a algum grupo (evitar duplicação)
-        const todosIdsEmGrupos = new Set(gruposCompactos.flatMap(g => g.produtosIds));
-        const conflito = produtosIdsSelecionados.some(id => todosIdsEmGrupos.has(id));
+        const todosIdsEmGrupos = getIdsProdutosAgrupados();
+        const idsNormalizados = produtosIdsSelecionados.map(id => Number(id)).filter(Boolean);
+        const conflito = idsNormalizados.some(id => todosIdsEmGrupos.has(id));
         if (conflito) {
             alert('Um ou mais produtos selecionados já pertencem a um grupo compacto. Remova-os do grupo atual antes de recriar.');
             return false;
         }
-        const novoId = Date.now();
-        const novoGrupo = {
-            id: novoId,
-            produtosIds: [...produtosIdsSelecionados],
-            criadoEm: new Date().toISOString()
-        };
-        gruposCompactos.push(novoGrupo);
-        salvarGruposLocal();
-        alert(`Grupo compacto criado com ${produtosIdsSelecionados.length} produtos.`);
-        return true;
+        const prateleirasDosProdutos = idsNormalizados.map(id => produtos.find(p => p.id === id)?.prateleira).filter(Boolean);
+        if (prateleirasDosProdutos.length > 0 && !prateleirasDosProdutos.every(p => p === prateleiraSelecionada)) {
+            alert('Todos os produtos do grupo devem pertencer à prateleira atualmente selecionada.');
+            return false;
+        }
+        return await salvarGrupoSupabase(idsNormalizados);
     }
 
-    function imprimirCodigoGrupo(grupo) {
-        const produtosDoGrupo = produtos.filter(p => grupo.produtosIds.includes(p.id));
-        const grupoIdStr = `CMP-${String(grupo.id).padStart(5, '0')}`;
-        const descricao = produtosDoGrupo.map(p => `${p.titulo || 'Sem título'} - ${p.artista || 'Sem artista'} (Nº ${p.numero || 'S/N'})`).join(' | ');
-        
-        const area = document.getElementById('areaImpressao');
-        area.innerHTML = '';
-        area.classList.remove('hidden');
-        
+    function criarCardImpressaoCodigo({ codigo, labelTexto, isGrupo = false }) {
         const card = document.createElement('div');
-        card.className = 'barcode-card';
+        card.className = isGrupo ? 'barcode-card compacto-card' : 'barcode-card';
         const canvas = document.createElement('canvas');
         card.appendChild(canvas);
         const label = document.createElement('div');
         label.className = 'label';
-        label.innerText = `📀 GRUPO COMPACTO: ${descricao}`;
+        label.innerText = labelTexto;
         card.appendChild(label);
-        area.appendChild(card);
-        
-        JsBarcode(canvas, grupoIdStr, {
-            format: "CODE128",
-            width: 1.2,
-            height: 30,
-            displayValue: true,
-            fontSize: 12,
-            margin: 2
+        JsBarcode(canvas, codigo, {
+            format: "CODE128", width: isGrupo ? 1 : 1.2, height: isGrupo ? 28 : 30,
+            displayValue: false, fontSize: isGrupo ? 10 : 12, margin: isGrupo ? 1 : 0
         });
-        
-        setTimeout(() => {
-            window.print();
-            setTimeout(() => area.classList.add('hidden'), 500);
-        }, 150);
+        return card;
     }
 
-    function gerarTodosParaImpressao(idsSelecionados) {
+    function imprimirCodigoGrupo(grupo) {
+        gerarItensParaImpressao([], [Number(grupo.id)]);
+    }
+
+    function gerarItensParaImpressao(produtosIds = [], gruposIds = []) {
         const area = document.getElementById('areaImpressao');
         if (!area) return;
         area.innerHTML = '';
         area.classList.remove('hidden');
-        const produtosParaImprimir = produtos.filter(p => idsSelecionados.includes(p.id));
+
+        const gruposSelecionados = gruposCompactos.filter(g => gruposIds.includes(Number(g.id)));
+        gruposSelecionados.forEach(grupo => {
+            const grupoIdStr = grupo.codigo || `CMP-${String(grupo.id).padStart(8, '0')}`;
+            const descricaoCompleta = descricaoCompactaGrupo(grupo);
+            const labelGrupo = `COMPACTO: ${descricaoCompleta}`;
+            area.appendChild(criarCardImpressaoCodigo({ codigo: grupoIdStr, labelTexto: labelGrupo, isGrupo: true }));
+        });
+
+        const idsDentroDeGruposImpressos = new Set(gruposSelecionados.flatMap(g => g.produtosIds));
+        const produtosParaImprimir = produtos.filter(p => produtosIds.includes(Number(p.id)) && !idsDentroDeGruposImpressos.has(Number(p.id)));
         produtosParaImprimir.forEach(prod => {
             const codigo = String(prod.id).padStart(8, '0');
-            const card = document.createElement('div');
-            card.className = 'barcode-card';
-            const canvas = document.createElement('canvas');
-            card.appendChild(canvas);
-            const label = document.createElement('div');
-            label.className = 'label';
             const numTape = prod.numero ? `Nº ${prod.numero}` : 'S/N';
-            label.innerText = `${prod.titulo || 'Sem título'} - ${prod.artista || 'Sem artista'} | ${numTape}`;
-            card.appendChild(label);
-            area.appendChild(card);
-            JsBarcode(canvas, codigo, {
-                format: "CODE128",
-                width: 1.2,
-                height: 30,
-                displayValue: false,
-                margin: 0
-            });
+            area.appendChild(criarCardImpressaoCodigo({ codigo, labelTexto: `${prod.titulo || 'Sem título'} - ${prod.artista || 'Sem artista'} | ${numTape}`, isGrupo: false }));
         });
-        setTimeout(() => {
-            window.print();
-            setTimeout(() => area.classList.add('hidden'), 500);
-        }, 150);
+
+        if (!area.children.length) {
+            area.classList.add('hidden');
+            alert('Nenhum item válido para imprimir.');
+            return;
+        }
+        setTimeout(() => { window.print(); setTimeout(() => area.classList.add('hidden'), 500); }, 150);
     }
 
-    // Eventos
-    document.getElementById('inputBusca')?.addEventListener('input', renderizarLista);
-    document.getElementById('filterPrateleira')?.addEventListener('change', renderizarLista);
-    document.getElementById('btnImprimirTodos')?.addEventListener('click', () => {
-        const visiveis = Array.from(document.querySelectorAll('.sel-produto')).map(cb => parseInt(cb.dataset.id));
-        if (visiveis.length === 0) { alert('Nenhum produto visível para imprimir.'); return; }
-        gerarTodosParaImpressao(visiveis);
-    });
-    document.getElementById('btnSelecionarTodos')?.addEventListener('click', () => {
-        document.querySelectorAll('.sel-produto').forEach(cb => cb.checked = true);
-    });
-    document.getElementById('btnImprimirSelecionados')?.addEventListener('click', () => {
-        const selecionados = Array.from(document.querySelectorAll('.sel-produto:checked')).map(cb => parseInt(cb.dataset.id));
-        if (selecionados.length === 0) { alert('Selecione pelo menos um produto.'); return; }
-        gerarTodosParaImpressao(selecionados);
-    });
-    document.getElementById('btnAgruparCompacto')?.addEventListener('click', () => {
-        const selecionados = Array.from(document.querySelectorAll('.sel-produto:checked')).map(cb => parseInt(cb.dataset.id));
-        if (selecionados.length < 2) { alert('Selecione pelo menos 2 produtos para formar um grupo compacto.'); return; }
-        criarGrupoCompacto(selecionados);
-        // limpar checkboxes
-        document.querySelectorAll('.sel-produto:checked').forEach(cb => cb.checked = false);
-    });
+    // ---------- Eventos ----------
+    function inicializarEventos() {
+        const selectPrateleira = document.getElementById('filterPrateleira');
+        selectPrateleira.addEventListener('change', async (e) => {
+            const valor = e.target.value;
+            if (valor && valor !== "") {
+                prateleiraSelecionada = valor;
+                habilitarInterface();
+                document.getElementById('avisoPrateleira')?.classList.add('hidden');
+                await carregarGruposSupabase();
+                renderizarLista();
+                renderizarGrupos();
+            } else {
+                prateleiraSelecionada = "";
+                mostrarMensagemInicial();
+                document.getElementById('avisoPrateleira')?.classList.remove('hidden');
+            }
+        });
+
+        document.getElementById('inputBusca')?.addEventListener('input', () => {
+            if (prateleiraSelecionada) {
+                renderizarLista();
+                renderizarGrupos();
+            }
+        });
+
+        document.getElementById('btnImprimirTodos')?.addEventListener('click', () => {
+            if (!prateleiraSelecionada) return;
+            const produtosVisiveis = Array.from(document.querySelectorAll('.sel-produto')).map(cb => parseInt(cb.dataset.id));
+            const gruposVisiveis = getGruposVisiveis().map(g => Number(g.id));
+            if (produtosVisiveis.length === 0 && gruposVisiveis.length === 0) { alert('Nenhum item visível para imprimir.'); return; }
+            gerarItensParaImpressao(produtosVisiveis, gruposVisiveis);
+        });
+
+        document.getElementById('btnSelecionarTodos')?.addEventListener('click', () => {
+            document.querySelectorAll('.sel-produto, .sel-grupo').forEach(cb => cb.checked = true);
+        });
+
+        document.getElementById('btnImprimirSelecionados')?.addEventListener('click', () => {
+            const produtosSelecionados = Array.from(document.querySelectorAll('.sel-produto:checked')).map(cb => parseInt(cb.dataset.id));
+            const gruposSelecionados = Array.from(document.querySelectorAll('.sel-grupo:checked')).map(cb => parseInt(cb.dataset.grupoId));
+            if (produtosSelecionados.length === 0 && gruposSelecionados.length === 0) { alert('Selecione pelo menos um produto ou grupo compacto.'); return; }
+            gerarItensParaImpressao(produtosSelecionados, gruposSelecionados);
+        });
+
+        document.getElementById('btnAgruparCompacto')?.addEventListener('click', async () => {
+            const selecionados = Array.from(document.querySelectorAll('.sel-produto:checked')).map(cb => parseInt(cb.dataset.id));
+            if (selecionados.length < 2) { alert('Selecione pelo menos 2 produtos para formar um grupo compacto.'); return; }
+            await criarGrupoCompacto(selecionados);
+            document.querySelectorAll('.sel-produto:checked').forEach(cb => cb.checked = false);
+        });
+    }
 
     carregarProdutos();
+    inicializarEventos();
+    mostrarMensagemInicial();
+    document.getElementById('avisoPrateleira')?.classList.remove('hidden');
     </script>
 </body>
 </html>

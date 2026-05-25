@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Ficha Técnica - Somax</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="./js/supabase-client.js"></script>
+    <style>
+        .campo-dinamico { border-left: 2px solid #4f46e5; padding-left: 0.75rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
+        .btn-remover { color: #ef4444; font-size: 0.7rem; margin-left: 0.5rem; cursor: pointer; }
+        .grupo-nav { background: #1f2937; border-radius: 0.75rem; padding: 0.75rem; margin-bottom: 1.5rem; }
+    </style>
+</head>
+<body class="bg-zinc-950 text-white p-6">
+    <div class="max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold">Ficha Técnica Avançada</h1>
+            <a href="scanner.html" class="text-zinc-400 hover:text-white text-sm">← Voltar ao Scanner</a>
+        </div>
+
+        <!-- Navegação entre Tapes do mesmo grupo -->
+        <div id="navGrupo" class="grupo-nav hidden">
+            <div class="flex justify-between items-center flex-wrap gap-2">
+                <span class="text-sm text-emerald-400">📀 Grupo: <span id="codigoGrupo"></span></span>
+                <div class="flex gap-2">
+                    <button id="btnTapeAnterior" class="bg-zinc-700 px-3 py-1 rounded text-sm disabled:opacity-50">◀ Anterior</button>
+                    <select id="selectTapeGrupo" class="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm"></select>
+                    <button id="btnTapeSeguinte" class="bg-zinc-700 px-3 py-1 rounded text-sm disabled:opacity-50">Seguinte ▶</button>
+                </div>
+            </div>
+        </div>
+
+        <form id="formFicha" class="space-y-6">
+            <!-- Informações Gerais -->
+            <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
+                <h2 class="text-lg font-semibold mb-3 text-indigo-400">📋 Informações Gerais</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label class="block text-xs text-zinc-400">Título do Projeto *</label><input type="text" id="titulo" class="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2" required></div>
+                    <div><label class="block text-xs text-zinc-400">Artista Principal</label><input type="text" id="artista" class="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2"></div>
+                    <div><label class="block text-xs text-zinc-400">Participação (feat.)</label><input type="text" id="participacao" class="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2"></div>
+                    <div><label class="block text-xs text-zinc-400">Formato</label><select id="formato" class="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2"><option>Single</option><option>EP</option><option>Álbum</option></select></div>
+                    <div><label class="block text-xs text-zinc-400">Ano de Produção</label><input type="number" id="ano" class="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2" placeholder="aaaa"></div>
+                    <div><label class="block text-xs text-zinc-400">Género</label><input type="text" id="genero" class="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2"></div>
+                    <div><label class="block text-xs text-zinc-400">Subgénero</label><input type="text" id="subgenero" class="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2"></div>
+                    <div><label class="block text-xs text-zinc-400">Label (Gravadora)</label><input type="text" id="label" class="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2"></div>
+                </div>
+            </div>
+
+            <!-- Faixas (dinâmico) -->
+            <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-lg font-semibold text-indigo-400">🎵 Faixas</h2>
+                    <button type="button" id="btnAddFaixa" class="bg-emerald-700 text-xs px-3 py-1 rounded">+ Adicionar faixa</button>
+                </div>
+                <div id="faixas-container" class="space-y-4"></div>
+            </div>
+
+            <!-- Produção Musical -->
+            <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
+                <h2 class="text-lg font-semibold mb-3 text-indigo-400">🎛️ Produção Musical</h2>
+                <div><label class="block text-xs text-zinc-400">Produtores</label><div id="produtores-container" class="space-y-2 mt-1"></div><button type="button" id="btnAddProdutor" class="text-xs text-indigo-400 mt-2">+ Adicionar produtor</button></div>
+                <div class="mt-4"><label class="block text-xs text-zinc-400">Músicos (instrumento)</label><div id="musicos-container" class="space-y-2 mt-1"></div><button type="button" id="btnAddMusico" class="text-xs text-indigo-400 mt-2">+ Adicionar músico</button></div>
+            </div>
+
+            <div class="flex gap-3">
+                <button type="submit" class="bg-indigo-600 px-6 py-2 rounded-lg font-semibold">💾 Guardar Ficha</button>
+                <button type="button" id="btnCancelar" class="border border-zinc-700 px-6 py-2 rounded-lg">Cancelar</button>
+            </div>
+        </form>
+    </div>
+
+    <script type="module">
+        import { supabase } from './js/supabase-client.js';
+
+        let tapeId = null;
+        let grupoCodigo = null;
+        let tapesDoGrupo = [];
+        let indiceAtual = 0;
+        
+        // Estrutura de dados normalizada (formato novo)
+        let dadosCompletos = {
+            participacao: '',
+            formato: 'Single',
+            ano: '',
+            genero: '',
+            subgenero: '',
+            label: '',
+            faixas: [],      // { titulo, compositores, interpretes, isrc, hook }
+            produtores: [],  // { nome_artistico, nome_completo }
+            musicos: []      // { nome_artistico, nome_completo, instrumento }
+        };
+
+        // ------------------------------------------------------------
+        //  FUNÇÃO DE NORMALIZAÇÃO (suporta formato antigo e novo)
+        // ------------------------------------------------------------
+        function normalizarDadosParaEdicao(fichaRow, catalogo) {
+            // Se existir dados_completos (formato novo), usa-o
+            if (fichaRow?.dados_completos && typeof fichaRow.dados_completos === 'object') {
+                const dc = fichaRow.dados_completos;
+                return {
+                    participacao: dc.participacao || '',
+                    formato: dc.formato || 'Single',
+                    ano: dc.ano || '',
+                    genero: dc.genero || '',
+                    subgenero: dc.subgenero || '',
+                    label: dc.label || '',
+                    faixas: Array.isArray(dc.faixas) ? dc.faixas.map(f => ({
+                        titulo: f.titulo || '',
+                        compositores: f.compositores || f.compositor || '',
+                        interpretes: f.interpretes || '',
+                        isrc: f.isrc || '',
+                        hook: f.hook || ''
+                    })) : [],
+                    produtores: Array.isArray(dc.produtores) ? dc.produtores : [],
+                    musicos: Array.isArray(dc.musicos) ? dc.musicos : []
+                };
+            }
+            
+            // Formato antigo: campos separados + faixas como JSON string
+            let faixasArray = [];
+            if (fichaRow?.faixas) {
+                try {
+                    const parsed = JSON.parse(fichaRow.faixas);
+                    if (Array.isArray(parsed)) {
+                        faixasArray = parsed.map(f => ({
+                            titulo: f.titulo || '',
+                            compositores: f.compositor || f.compositores || '',
+                            interpretes: f.interpretes || '',
+                            isrc: f.isrc || '',
+                            hook: f.hook || ''
+                        }));
+                    } else {
+                        faixasArray = [{ titulo: fichaRow.faixas, compositores: '', interpretes: '', isrc: '', hook: '' }];
+                    }
+                } catch(e) {
+                    faixasArray = [{ titulo: fichaRow.faixas, compositores: '', interpretes: '', isrc: '', hook: '' }];
+                }
+            }
+            
+            // Músicos: se existir o campo "musicos" como string, converte para array
+            let musicosArray = [];
+            if (fichaRow?.musicos && typeof fichaRow.musicos === 'string' && fichaRow.musicos.trim()) {
+                musicosArray = [{ nome_artistico: fichaRow.musicos, nome_completo: '', instrumento: '' }];
+            } else if (Array.isArray(fichaRow?.musicos)) {
+                musicosArray = fichaRow.musicos;
+            }
+            
+            return {
+                participacao: '',
+                formato: 'Single',
+                ano: '',
+                genero: fichaRow?.genero || '',
+                subgenero: '',
+                label: '',
+                faixas: faixasArray,
+                produtores: [],
+                musicos: musicosArray
+            };
+        }
+
+        // ------------------------------------------------------------
+        //  CARREGAR TAPE E FICHA
+        // ------------------------------------------------------------
+        async function carregarTape(id) {
+            // Carregar catálogo
+            const { data: catalogo, error: catErr } = await supabase
+                .from('catalogo')
+                .select('id, titulo, artista, numero')
+                .eq('id', id)
+                .single();
+            if (catErr || !catalogo) {
+                alert('Produto não encontrado.');
+                return;
+            }
+            document.getElementById('titulo').value = catalogo.titulo || '';
+            document.getElementById('artista').value = catalogo.artista || '';
+            
+            // Carregar ficha técnica
+            const { data: ficha } = await supabase
+                .from('ficha_tecnica')
+                .select('*')
+                .eq('catalogo_id', id)
+                .single();
+            
+            const dados = normalizarDadosParaEdicao(ficha, catalogo);
+            dadosCompletos = dados;
+            
+            // Preencher campos do formulário
+            document.getElementById('participacao').value = dados.participacao || '';
+            document.getElementById('formato').value = dados.formato || 'Single';
+            document.getElementById('ano').value = dados.ano || '';
+            document.getElementById('genero').value = dados.genero || '';
+            document.getElementById('subgenero').value = dados.subgenero || '';
+            document.getElementById('label').value = dados.label || '';
+            
+            renderizarFaixas();
+            renderizarProdutores();
+            renderizarMusicos();
+        }
+        
+        // ------------------------------------------------------------
+        //  RENDERIZAÇÃO DOS CAMPOS DINÂMICOS
+        // ------------------------------------------------------------
+        function renderizarFaixas() {
+            const container = document.getElementById('faixas-container');
+            container.innerHTML = '';
+            dadosCompletos.faixas.forEach((faixa, idx) => {
+                const div = document.createElement('div');
+                div.className = 'campo-dinamico';
+                div.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <strong>Faixa ${idx+1}</strong>
+                        <button type="button" class="btn-remover-faixa text-red-400 text-xs" data-idx="${idx}">✖ Remover</button>
+                    </div>
+                    <input type="text" placeholder="Título" value="${escapeHtml(faixa.titulo)}" class="faixa-titulo w-full bg-zinc-800 rounded px-2 py-1 mt-1 text-sm">
+                    <input type="text" placeholder="Compositores (separados por vírgula)" value="${escapeHtml(faixa.compositores)}" class="faixa-compositores w-full bg-zinc-800 rounded px-2 py-1 mt-1 text-sm">
+                    <input type="text" placeholder="Intérpretes (separados por vírgula)" value="${escapeHtml(faixa.interpretes)}" class="faixa-interpretes w-full bg-zinc-800 rounded px-2 py-1 mt-1 text-sm">
+                    <input type="text" placeholder="ISRC" value="${escapeHtml(faixa.isrc)}" class="faixa-isrc w-full bg-zinc-800 rounded px-2 py-1 mt-1 text-sm">
+                    <input type="text" placeholder="Hook TikTok (MM:SS)" value="${escapeHtml(faixa.hook)}" class="faixa-hook w-full bg-zinc-800 rounded px-2 py-1 mt-1 text-sm">
+                `;
+                container.appendChild(div);
+            });
+            // Eventos para actualizar dadosCompletos quando os campos mudam
+            document.querySelectorAll('.faixa-titulo, .faixa-compositores, .faixa-interpretes, .faixa-isrc, .faixa-hook').forEach(inp => {
+                inp.addEventListener('input', (e) => {
+                    const div = inp.closest('.campo-dinamico');
+                    const idx = parseInt(div.querySelector('.btn-remover-faixa').dataset.idx);
+                    const campo = inp.classList[0].replace('faixa-', '');
+                    dadosCompletos.faixas[idx][campo] = inp.value;
+                });
+            });
+            document.querySelectorAll('.btn-remover-faixa').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const idx = parseInt(btn.dataset.idx);
+                    dadosCompletos.faixas.splice(idx, 1);
+                    renderizarFaixas();
+                });
+            });
+        }
+        
+        function renderizarProdutores() {
+            const container = document.getElementById('produtores-container');
+            container.innerHTML = '';
+            dadosCompletos.produtores.forEach((prod, idx) => {
+                const div = document.createElement('div');
+                div.className = 'flex gap-2 items-center';
+                div.innerHTML = `
+                    <input type="text" placeholder="Nome artístico" value="${escapeHtml(prod.nome_artistico)}" class="prod-nome w-full bg-zinc-800 rounded px-2 py-1 text-sm">
+                    <input type="text" placeholder="Nome completo" value="${escapeHtml(prod.nome_completo)}" class="prod-nomecomp w-full bg-zinc-800 rounded px-2 py-1 text-sm">
+                    <button type="button" class="btn-remover-produtor text-red-400 text-xs" data-idx="${idx}">✖</button>
+                `;
+                container.appendChild(div);
+            });
+            document.querySelectorAll('.prod-nome, .prod-nomecomp').forEach(inp => {
+                inp.addEventListener('input', (e) => {
+                    const div = inp.closest('.flex');
+                    const idx = parseInt(div.querySelector('.btn-remover-produtor').dataset.idx);
+                    const campo = inp.classList[0] === 'prod-nome' ? 'nome_artistico' : 'nome_completo';
+                    dadosCompletos.produtores[idx][campo] = inp.value;
+                });
+            });
+            document.querySelectorAll('.btn-remover-produtor').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.dataset.idx);
+                    dadosCompletos.produtores.splice(idx, 1);
+                    renderizarProdutores();
+                });
+            });
+        }
+        
+        function renderizarMusicos() {
+            const container = document.getElementById('musicos-container');
+            container.innerHTML = '';
+            dadosCompletos.musicos.forEach((mus, idx) => {
+                const div = document.createElement('div');
+                div.className = 'flex gap-2 items-center flex-wrap';
+                div.innerHTML = `
+                    <input type="text" placeholder="Nome artístico" value="${escapeHtml(mus.nome_artistico)}" class="mus-nome w-40 bg-zinc-800 rounded px-2 py-1 text-sm">
+                    <input type="text" placeholder="Nome completo" value="${escapeHtml(mus.nome_completo)}" class="mus-nomecomp w-40 bg-zinc-800 rounded px-2 py-1 text-sm">
+                    <input type="text" placeholder="Instrumento" value="${escapeHtml(mus.instrumento)}" class="mus-instrumento w-32 bg-zinc-800 rounded px-2 py-1 text-sm">
+                    <button type="button" class="btn-remover-musico text-red-400 text-xs" data-idx="${idx}">✖</button>
+                `;
+                container.appendChild(div);
+            });
+            document.querySelectorAll('.mus-nome, .mus-nomecomp, .mus-instrumento').forEach(inp => {
+                inp.addEventListener('input', (e) => {
+                    const div = inp.closest('.flex');
+                    const idx = parseInt(div.querySelector('.btn-remover-musico').dataset.idx);
+                    const campo = inp.classList[0].replace('mus-', '');
+                    dadosCompletos.musicos[idx][campo] = inp.value;
+                });
+            });
+            document.querySelectorAll('.btn-remover-musico').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.dataset.idx);
+                    dadosCompletos.musicos.splice(idx, 1);
+                    renderizarMusicos();
+                });
+            });
+        }
+        
+        // ------------------------------------------------------------
+        //  NAVEGAÇÃO ENTRE TAPES DO GRUPO
+        // ------------------------------------------------------------
+        async function carregarGrupoELista() {
+            if (!grupoCodigo) return;
+            const { data: grupo, error } = await supabase
+                .from('grupos_compactos')
+                .select('produtos_ids')
+                .eq('codigo', grupoCodigo)
+                .single();
+            if (error || !grupo) return;
+            const ids = grupo.produtos_ids;
+            const { data: catalogos } = await supabase
+                .from('catalogo')
+                .select('id, titulo, artista')
+                .in('id', ids);
+            if (catalogos && catalogos.length) {
+                tapesDoGrupo = catalogos;
+                const idxAtual = tapesDoGrupo.findIndex(t => t.id === tapeId);
+                if (idxAtual !== -1) indiceAtual = idxAtual;
+                const select = document.getElementById('selectTapeGrupo');
+                select.innerHTML = '';
+                tapesDoGrupo.forEach((t, i) => {
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = `${t.titulo} (${t.artista})`;
+                    if (i === indiceAtual) option.selected = true;
+                    select.appendChild(option);
+                });
+                document.getElementById('codigoGrupo').innerText = grupoCodigo;
+                document.getElementById('navGrupo').classList.remove('hidden');
+                select.addEventListener('change', (e) => {
+                    indiceAtual = parseInt(e.target.value);
+                    tapeId = tapesDoGrupo[indiceAtual].id;
+                    carregarTape(tapeId);
+                });
+                document.getElementById('btnTapeAnterior').addEventListener('click', () => {
+                    if (indiceAtual > 0) {
+                        indiceAtual--;
+                        tapeId = tapesDoGrupo[indiceAtual].id;
+                        carregarTape(tapeId);
+                        select.value = indiceAtual;
+                    }
+                });
+                document.getElementById('btnTapeSeguinte').addEventListener('click', () => {
+                    if (indiceAtual < tapesDoGrupo.length-1) {
+                        indiceAtual++;
+                        tapeId = tapesDoGrupo[indiceAtual].id;
+                        carregarTape(tapeId);
+                        select.value = indiceAtual;
+                    }
+                });
+            }
+        }
+        
+        // ------------------------------------------------------------
+        //  SALVAR (formato novo: dados_completos)
+        // ------------------------------------------------------------
+        async function salvarFicha(e) {
+            e.preventDefault();
+            
+            // Recolher dados actuais
+            dadosCompletos.participacao = document.getElementById('participacao').value;
+            dadosCompletos.formato = document.getElementById('formato').value;
+            dadosCompletos.ano = document.getElementById('ano').value;
+            dadosCompletos.genero = document.getElementById('genero').value;
+            dadosCompletos.subgenero = document.getElementById('subgenero').value;
+            dadosCompletos.label = document.getElementById('label').value;
+            // Os arrays faixas, produtores, musicos já estão em dadosCompletos (actualizados pelos inputs)
+            
+            const dadosParaGuardar = {
+                catalogo_id: tapeId,
+                dados_completos: dadosCompletos
+            };
+            
+            const { error } = await supabase
+                .from('ficha_tecnica')
+                .upsert(dadosParaGuardar, { onConflict: 'catalogo_id' });
+            
+            if (error) {
+                console.error(error);
+                alert('Erro ao guardar: ' + error.message);
+            } else {
+                alert('Ficha guardada com sucesso!');
+            }
+        }
+        
+        // ------------------------------------------------------------
+        //  EVENTOS DE ADIÇÃO
+        // ------------------------------------------------------------
+        document.getElementById('btnAddFaixa').addEventListener('click', () => {
+            dadosCompletos.faixas.push({ titulo: '', compositores: '', interpretes: '', isrc: '', hook: '' });
+            renderizarFaixas();
+        });
+        document.getElementById('btnAddProdutor').addEventListener('click', () => {
+            dadosCompletos.produtores.push({ nome_artistico: '', nome_completo: '' });
+            renderizarProdutores();
+        });
+        document.getElementById('btnAddMusico').addEventListener('click', () => {
+            dadosCompletos.musicos.push({ nome_artistico: '', nome_completo: '', instrumento: '' });
+            renderizarMusicos();
+        });
+        document.getElementById('btnCancelar').addEventListener('click', () => window.history.back());
+        document.getElementById('formFicha').addEventListener('submit', salvarFicha);
+        
+        // ------------------------------------------------------------
+        //  INICIALIZAÇÃO
+        // ------------------------------------------------------------
+        const urlParams = new URLSearchParams(window.location.search);
+        tapeId = parseInt(urlParams.get('id'));
+        grupoCodigo = urlParams.get('grupo');
+        
+        if (tapeId) {
+            await carregarTape(tapeId);
+            if (grupoCodigo) await carregarGrupoELista();
+        } else {
+            alert('ID do tape não fornecido.');
+        }
+        
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+    </script>
+</body>
+</html>
