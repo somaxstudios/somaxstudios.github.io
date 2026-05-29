@@ -723,7 +723,11 @@ async function salvarProduto() {
     else if (podeLancarVal === 'true') podeLancarVal = true;
     else podeLancarVal = false;
 
-    const gravadora = document.getElementById('addGravadora').value || null;
+    const gravadoraInput = document.getElementById('addGravadora').value.trim();
+
+    const gravadora = gravadoraInput !== ''
+        ? gravadoraInput
+        : "Sem Identificação";
 
     const novoProduto = {
         titulo,
