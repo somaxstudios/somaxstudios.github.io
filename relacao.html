@@ -135,30 +135,100 @@
     ::-webkit-scrollbar-track { background: #111; }
     ::-webkit-scrollbar-thumb { background: #c9a84c; border-radius: 10px; }
 
-    /* Animação sutil para login */
     .login-card {
       animation: fadeUp 0.4s ease-out;
     }
     @keyframes fadeUp {
-      from {
-        opacity: 0;
-        transform: translateY(15px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
     }
-    /* overlay loading dentro do app */
     .app-loading {
       background: rgba(0,0,0,0.8);
       backdrop-filter: blur(4px);
+    }
+
+    /* ========== CSS DE IMPRESSÃO PROFISSIONAL ========== */
+    @media print {
+      .no-print, .filter-section, .pagination, #btnLogout, #btnRefresh, #btnExportCSV, #btnExportPDF, #btnPrintReport,
+      .search-input, .filter-select, #clearFilters, #loginContainer, .bg-card .pagination, .bg-card > div:last-child,
+      button, .no-print, .print\:hidden {
+        display: none !important;
+      }
+
+      body, #appContainer, main, .bg-card, .metric-card, .data-table, .data-table tbody, .data-table td, .data-table th {
+        background: white !important;
+        color: black !important;
+        border-color: #ccc !important;
+        box-shadow: none !important;
+      }
+
+      @page {
+        size: portrait;
+        margin: 1.2cm;
+      }
+
+      .gold-gradient, .bg-gradient-to-r, .metric-card, .bg-card {
+        background: white !important;
+        -webkit-text-fill-color: black !important;
+        color: black !important;
+        border: 1px solid #aaa !important;
+      }
+
+      .data-table thead th {
+        background: #f0f0f0 !important;
+        color: black !important;
+        border-bottom: 2px solid #c9a84c !important;
+      }
+
+      .data-table tbody td {
+        border-bottom: 1px solid #ddd !important;
+        color: black !important;
+      }
+
+      .badge-off {
+        background: #fce4e4 !important;
+        color: #b91c1c !important;
+        border: 1px solid #b91c1c !important;
+      }
+
+      .print-report-header, .print-filters-info {
+        display: block !important;
+      }
+
+      .table-wrapper {
+        overflow: visible !important;
+      }
+      .data-table {
+        min-width: 100% !important;
+        font-size: 10pt !important;
+      }
+      .stats-grid {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .metric-card {
+        padding: 6px 8px;
+        text-align: center;
+        font-size: 9pt;
+      }
+      .metric-card p:first-child {
+        color: #555 !important;
+      }
+      .metric-card p:last-child {
+        color: #000 !important;
+      }
+    }
+
+    .print-filters-info {
+      display: none;
     }
   </style>
 </head>
 <body class="antialiased">
 
-  <!-- TELA DE LOGIN (inicialmente visível se não autenticado) -->
+  <!-- TELA DE LOGIN -->
   <div id="loginContainer" class="fixed inset-0 bg-black/95 z-[1000] flex items-center justify-center p-4 backdrop-blur-sm" style="display: flex;">
     <div class="login-card max-w-md w-full bg-[#0c0c0c] border border-[#2a2a2a] rounded-2xl shadow-2xl p-6">
       <div class="flex justify-center mb-4">
@@ -194,27 +264,30 @@
     </div>
   </div>
 
-  <!-- APLICAÇÃO PRINCIPAL (inicialmente oculta) -->
+  <!-- APLICAÇÃO PRINCIPAL -->
   <div id="appContainer" style="display: none;">
     <main class="max-w-full px-4 py-5 md:px-6 md:py-8">
-      <!-- Cabeçalho com botão logout -->
+      
       <div class="flex flex-col gap-3 border-b border-[#2a2a2a] pb-5 mb-5">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between flex-wrap gap-2">
           <div class="flex items-center gap-2">
             <div class="w-8 h-8 rounded-xl bg-[#c9a84c]/10 flex items-center justify-center">
               <i data-lucide="archive" class="w-4 h-4 text-[#c9a84c]"></i>
             </div>
             <h1 class="text-xl font-black"><span class="gold-gradient">Off Stream</span></h1>
           </div>
-          <div class="flex gap-2 no-print">
+          <div class="flex gap-2 no-print flex-wrap">
             <button id="btnRefresh" class="bg-[#121212] border border-[#2a2a2a] rounded-xl px-3 py-2 text-xs flex items-center gap-1">
-              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Recarregar
             </button>
             <button id="btnExportCSV" class="bg-[#121212] border border-[#2a2a2a] rounded-xl px-3 py-2 text-xs flex items-center gap-1">
               <i data-lucide="download" class="w-3.5 h-3.5"></i> CSV
             </button>
             <button id="btnExportPDF" class="bg-[#121212] border border-[#2a2a2a] rounded-xl px-3 py-2 text-xs flex items-center gap-1">
               <i data-lucide="file-text" class="w-3.5 h-3.5"></i> PDF
+            </button>
+            <button id="btnPrintReport" class="bg-[#121212] border border-[#2a2a2a] rounded-xl px-3 py-2 text-xs flex items-center gap-1">
+              <i data-lucide="printer" class="w-3.5 h-3.5"></i> Imprimir
             </button>
             <button id="btnLogout" class="bg-red-950/40 border border-red-800/50 rounded-xl px-3 py-2 text-xs flex items-center gap-1 text-red-300 hover:bg-red-900/30">
               <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Sair
@@ -224,6 +297,13 @@
         <p class="text-gray-400 text-xs leading-relaxed">
           Produtos já encontrados nas prateleiras, com status OFF (pendentes de upload).
         </p>
+      </div>
+
+      <!-- Resumo de filtros para impressão (visível apenas no papel) -->
+      <div class="print-filters-info" style="margin-bottom: 12px; border-bottom: 1px solid #ccc; padding-bottom: 8px;">
+        <h3 class="text-lg font-bold">Somax Studios – Relatório de Catálogo OFF</h3>
+        <p id="printFilterSummary" class="text-sm">Filtros ativos: nenhum</p>
+        <p class="text-xs text-gray-500">Gerado em: <span id="printDateSpan"></span></p>
       </div>
 
       <!-- Cards resumo -->
@@ -242,13 +322,13 @@
         </div>
       </div>
 
-      <!-- Filtros -->
-      <div class="bg-card rounded-xl p-4 mb-5 space-y-3">
+      <!-- Filtros (ocultos na impressão) -->
+      <div class="filter-section bg-card rounded-xl p-4 mb-5 space-y-3 no-print">
         <div>
           <label class="block text-[10px] uppercase text-gray-400 mb-1">Buscar</label>
           <div class="relative">
             <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500"></i>
-            <input type="text" id="searchInput" placeholder="Título ou artista" class="search-input pl-8 py-2 text-sm">
+            <input type="text" id="searchInput" placeholder="Título, artista, gravadora ou número" class="search-input pl-8 py-2 text-sm">
           </div>
         </div>
         <div>
@@ -259,17 +339,27 @@
           <label class="block text-[10px] uppercase text-gray-400 mb-1">Formato</label>
           <select id="formatoFilter" class="filter-select py-2 text-sm"></select>
         </div>
+        <div>
+          <label class="block text-[10px] uppercase text-gray-400 mb-1">Gravadora</label>
+          <select id="gravadoraFilter" class="filter-select py-2 text-sm"></select>
+        </div>
+        <div>
+          <label class="block text-[10px] uppercase text-gray-400 mb-1">Identificação</label>
+          <select id="identificacaoFilter" class="filter-select py-2 text-sm">
+            <option value="">Todos</option>
+            <option value="somente-identificados">Retirar não identificados</option>
+            <option value="somente-nao-identificados">Somente não identificados</option>
+          </select>
+        </div>
         <button id="clearFilters" class="text-xs text-gray-400 hover:text-[#c9a84c] flex items-center justify-center gap-1 py-1">
           <i data-lucide="eraser" class="w-3 h-3"></i> Limpar filtros
         </button>
       </div>
 
-      <!-- Estatísticas da prateleira -->
-      <div id="shelfStatsPanel" class="bg-gradient-to-r from-[#0f0f0f] to-[#151515] rounded-xl border border-[#2a2a2a] p-4 mb-5 hidden">
+      <!-- Estatísticas da prateleira (apenas tela) -->
+      <div id="shelfStatsPanel" class="bg-gradient-to-r from-[#0f0f0f] to-[#151515] rounded-xl border border-[#2a2a2a] p-4 mb-5 hidden no-print">
         <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-          <h3 class="text-sm font-bold gold-gradient flex items-center gap-1">
-            <i data-lucide="bar-chart-3" class="w-4 h-4"></i> Estatísticas
-          </h3>
+          <h3 class="text-sm font-bold gold-gradient flex items-center gap-1"><i data-lucide="bar-chart-3" class="w-4 h-4"></i> Estatísticas</h3>
           <span id="shelfNameBadge" class="bg-[#c9a84c]/10 px-2 py-0.5 rounded-full text-[#c9a84c] text-xs font-mono"></span>
         </div>
         <div class="stats-grid">
@@ -289,12 +379,10 @@
             <thead>
               <tr><th>#</th><th>Título</th><th>Artista</th><th>Prateleira</th><th>Formato</th><th>Gravadora</th><th>Número</th><th>Status</th></tr>
             </thead>
-            <tbody id="tableBody">
-              <tr><td colspan="8" class="text-center py-8 text-gray-400 text-sm">Autentique para carregar dados</td></tr>
-            </tbody>
+            <tbody id="tableBody"><tr><td colspan="8" class="text-center py-8 text-gray-400 text-sm">Autentique para carregar dados</td></tr></tbody>
           </table>
         </div>
-        <div class="flex flex-col sm:flex-row justify-between items-center gap-3 p-4 border-t border-[#2a2a2a] bg-black/20">
+        <div class="flex flex-col sm:flex-row justify-between items-center gap-3 p-4 border-t border-[#2a2a2a] bg-black/20 no-print">
           <div class="text-[11px] text-gray-400"><span id="infoStart">0</span> - <span id="infoEnd">0</span> de <span id="totalFiltered">0</span></div>
           <div class="pagination" id="paginationControls"></div>
         </div>
@@ -305,7 +393,6 @@
       </div>
     </main>
 
-    <!-- Loading overlay interno (quando recarregar dados) -->
     <div id="appLoadingOverlay" class="fixed inset-0 bg-black/90 z-[200] flex items-center justify-center backdrop-blur-sm hidden">
       <div class="text-center"><i data-lucide="loader-2" class="animate-spin w-8 h-8 text-[#c9a84c] mx-auto mb-2"></i><p class="text-white text-xs">Carregando catálogo...</p></div>
     </div>
@@ -318,13 +405,13 @@
     const supabaseKey = 'sb_publishable_shOmcA8udv3Tw0xKYzafAw_s1YXgbDk';
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Estado da aplicação
+    // Estado
     let todosProdutosOff = [];
     let dadosFiltrados = [];
     let currentPage = 1;
     const rowsPerPage = 20;
 
-    // Elementos DOM do app
+    // DOM elements
     const appContainer = document.getElementById('appContainer');
     const loginContainer = document.getElementById('loginContainer');
     const appLoadingOverlay = document.getElementById('appLoadingOverlay');
@@ -332,10 +419,13 @@
     const searchInput = document.getElementById('searchInput');
     const shelfFilter = document.getElementById('shelfFilter');
     const formatoFilter = document.getElementById('formatoFilter');
+    const gravadoraFilter = document.getElementById('gravadoraFilter');
+    const identificacaoFilter = document.getElementById('identificacaoFilter');
     const clearFiltersBtn = document.getElementById('clearFilters');
     const btnRefresh = document.getElementById('btnRefresh');
     const btnExportCSV = document.getElementById('btnExportCSV');
     const btnExportPDF = document.getElementById('btnExportPDF');
+    const btnPrintReport = document.getElementById('btnPrintReport');
     const btnLogout = document.getElementById('btnLogout');
     const totalOffSpan = document.getElementById('totalOffValue');
     const totalShelvesSpan = document.getElementById('totalShelvesValue');
@@ -343,7 +433,7 @@
     const dataAtualizacaoSpan = document.getElementById('dataAtualizacao');
     const shelfStatsPanel = document.getElementById('shelfStatsPanel');
 
-    // helpers
+    // Helpers
     const norm = (v) => (v ?? '').toString().trim();
     const lower = (v) => norm(v).toLowerCase();
     const isEmpty = (v) => {
@@ -355,7 +445,7 @@
       return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
     };
 
-    // --- Funções de dados ---
+    // Busca dados do Supabase
     async function carregarCatalogo() {
       let all = [];
       let start = 0;
@@ -388,11 +478,24 @@
       totalFormatosSpan.innerText = formats.size.toLocaleString('pt-BR');
 
       const shelfOptions = ['<option value="">Todas as prateleiras</option>'];
-      const formatoOptions = ['<option value="">Todos os formatos</option>'];
       [...prats].sort().forEach(s => shelfOptions.push(`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`));
-      [...formats].sort().forEach(f => formatoOptions.push(`<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`));
       shelfFilter.innerHTML = shelfOptions.join('');
+      const formatoOptions = ['<option value="">Todos os formatos</option>'];
+      [...formats].sort().forEach(f => formatoOptions.push(`<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`));
       formatoFilter.innerHTML = formatoOptions.join('');
+      const gravadoras = new Set(produtos.map(p => norm(p.gravadora)).filter(g => !isEmpty(g)));
+      const gravadoraOptions = ['<option value="">Todas as gravadoras</option>'];
+      [...gravadoras].sort().forEach(g => gravadoraOptions.push(`<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`));
+      gravadoraFilter.innerHTML = gravadoraOptions.join('');
+    }
+
+    function atualizarMetricasFiltradas(produtos) {
+      const total = produtos.length;
+      const prats = new Set(produtos.map(p => norm(p.prateleira)).filter(p => !isEmpty(p)));
+      const formats = new Set(produtos.map(p => norm(p.formato)).filter(f => !isEmpty(f)));
+      totalOffSpan.innerText = total.toLocaleString('pt-BR');
+      totalShelvesSpan.innerText = prats.size.toLocaleString('pt-BR');
+      totalFormatosSpan.innerText = formats.size.toLocaleString('pt-BR');
     }
 
     function atualizarStatsPrateleira() {
@@ -417,19 +520,54 @@
       lucide.createIcons();
     }
 
+    function getActiveFiltersSummary() {
+      const filtros = [];
+      const termo = searchInput.value.trim();
+      if (termo) filtros.push(`Busca: "${termo}"`);
+      const prateleira = shelfFilter.value;
+      if (prateleira) filtros.push(`Prateleira: ${prateleira}`);
+      const formato = formatoFilter.value;
+      if (formato) filtros.push(`Formato: ${formato}`);
+      const gravadora = gravadoraFilter.value;
+      if (gravadora) filtros.push(`Gravadora: ${gravadora}`);
+      const ident = identificacaoFilter.value;
+      if (ident === 'somente-identificados') filtros.push('Somente identificados (Título+Artista+Gravadora)');
+      if (ident === 'somente-nao-identificados') filtros.push('Somente não identificados');
+      return filtros.length ? filtros.join(' · ') : 'Nenhum filtro aplicado';
+    }
+
+    function atualizarResumoFiltrosImpressao() {
+      const summary = getActiveFiltersSummary();
+      const printSummarySpan = document.getElementById('printFilterSummary');
+      if (printSummarySpan) printSummarySpan.innerText = `Filtros ativos: ${summary}`;
+      const printDateSpan = document.getElementById('printDateSpan');
+      if (printDateSpan) printDateSpan.innerText = new Date().toLocaleString('pt-BR');
+    }
+
     function aplicarFiltros() {
       const termo = lower(searchInput.value);
       const prateleira = norm(shelfFilter.value);
       const formato = norm(formatoFilter.value);
+      const gravadora = norm(gravadoraFilter.value);
+      const identificacao = norm(identificacaoFilter.value);
+
       let resultado = [...todosProdutosOff];
-      if (termo) resultado = resultado.filter(p => lower(p.titulo).includes(termo) || lower(p.artista).includes(termo));
+      if (termo) {
+        resultado = resultado.filter(p => lower(p.titulo).includes(termo) || lower(p.artista).includes(termo) || lower(p.gravadora).includes(termo) || lower(p.numero).includes(termo));
+      }
       if (prateleira) resultado = resultado.filter(p => norm(p.prateleira) === prateleira);
       if (formato) resultado = resultado.filter(p => norm(p.formato) === formato);
+      if (gravadora) resultado = resultado.filter(p => norm(p.gravadora) === gravadora);
+      if (identificacao === 'somente-identificados') resultado = resultado.filter(p => !isEmpty(p.titulo) && !isEmpty(p.artista) && !isEmpty(p.gravadora));
+      if (identificacao === 'somente-nao-identificados') resultado = resultado.filter(p => isEmpty(p.titulo) || isEmpty(p.artista) || isEmpty(p.gravadora));
+
       dadosFiltrados = resultado;
       currentPage = 1;
+      atualizarMetricasFiltradas(dadosFiltrados);
       renderizarTabela();
       atualizarPaginacaoInfo();
       atualizarStatsPrateleira();
+      atualizarResumoFiltrosImpressao();
     }
 
     function renderizarTabela() {
@@ -493,34 +631,31 @@
 
     async function exportarPDF() {
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-      doc.setFontSize(16);
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      doc.setFontSize(14);
       doc.setTextColor(40, 40, 40);
-      doc.text('Somax Studios - Relatório de Produtos OFF', 14, 15);
+      doc.text('Somax Studios – Relatório de Catálogo OFF', 14, 15);
       doc.setFontSize(9);
       doc.setTextColor(100, 100, 100);
       doc.text(`Gerado: ${new Date().toLocaleString('pt-BR')}`, 14, 22);
-      const prateleiraAtual = norm(shelfFilter.value);
-      if (prateleiraAtual) {
-        const produtos = todosProdutosOff.filter(p => norm(p.prateleira) === prateleiraAtual);
-        const semNum = produtos.filter(p => isEmpty(p.numero)).length;
-        const semArt = produtos.filter(p => isEmpty(p.artista)).length;
-        doc.text(`Prateleira: ${prateleiraAtual} | Total: ${produtos.length} | Sem Nº: ${semNum} | Sem Artista: ${semArt}`, 14, 30);
-      } else {
-        doc.text(`Total de itens OFF: ${dadosFiltrados.length} | Filtros aplicados`, 14, 30);
-      }
+      const filtrosResumo = getActiveFiltersSummary();
+      doc.text(`Filtros: ${filtrosResumo}`, 14, 29);
+      doc.text(`Total de itens: ${dadosFiltrados.length}`, 14, 36);
       const headers = [['#', 'Título', 'Artista', 'Prateleira', 'Formato', 'Gravadora', 'Número']];
-      const body = dadosFiltrados.map((item, idx) => [idx + 1, item.titulo || '—', item.artista || '—', item.prateleira || '—', item.formato || '—', item.gravadora || '—', item.numero || '—']);
+      const body = dadosFiltrados.map((item, idx) => [
+        idx+1, item.titulo || '—', item.artista || '—', item.prateleira || '—',
+        item.formato || '—', item.gravadora || '—', item.numero || '—'
+      ]);
       doc.autoTable({
         head: headers,
         body: body,
-        startY: 38,
+        startY: 42,
         theme: 'striped',
         headStyles: { fillColor: [201, 168, 76], textColor: [0, 0, 0], fontStyle: 'bold' },
         styles: { fontSize: 7, cellPadding: 2, textColor: [30, 30, 30] },
-        columnStyles: { 0: { cellWidth: 10 }, 1: { cellWidth: 40 }, 2: { cellWidth: 40 }, 3: { cellWidth: 25 }, 4: { cellWidth: 20 }, 5: { cellWidth: 35 }, 6: { cellWidth: 20 } }
+        columnStyles: { 0: { cellWidth: 8 }, 1: { cellWidth: 42 }, 2: { cellWidth: 38 }, 3: { cellWidth: 28 }, 4: { cellWidth: 20 }, 5: { cellWidth: 30 }, 6: { cellWidth: 20 } }
       });
-      doc.save(`somax_off_${prateleiraAtual || 'geral'}_${new Date().toISOString().slice(0, 19)}.pdf`);
+      doc.save(`somax_off_${new Date().toISOString().slice(0,19)}.pdf`);
     }
 
     function exportarCSV() {
@@ -531,7 +666,7 @@
       const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `somax_off_${new Date().toISOString().slice(0, 19)}.csv`;
+      link.download = `somax_off_${new Date().toISOString().slice(0,19)}.csv`;
       link.click();
       URL.revokeObjectURL(link.href);
     }
@@ -540,10 +675,56 @@
       searchInput.value = '';
       shelfFilter.value = '';
       formatoFilter.value = '';
+      gravadoraFilter.value = '';
+      identificacaoFilter.value = '';
       aplicarFiltros();
     }
 
-    // --- Core: carregar dados e popular painel (somente com autenticação ativa)---
+    function imprimirRelatorioCompleto() {
+      const filtrosTexto = getActiveFiltersSummary();
+      const dataHora = new Date().toLocaleString('pt-BR');
+      const totalItens = dadosFiltrados.length;
+      let linhasTabela = '';
+      dadosFiltrados.forEach((item, idx) => {
+        linhasTabela += `<tr>
+          <td style="border:1px solid #ccc; padding:6px;">${idx+1}</td>
+          <td style="border:1px solid #ccc; padding:6px;">${escapeHtml(item.titulo || '—')}</td>
+          <td style="border:1px solid #ccc; padding:6px;">${escapeHtml(item.artista || '—')}</td>
+          <td style="border:1px solid #ccc; padding:6px;">${escapeHtml(item.prateleira || '—')}</td>
+          <td style="border:1px solid #ccc; padding:6px;">${escapeHtml(item.formato || '—')}</td>
+          <td style="border:1px solid #ccc; padding:6px;">${escapeHtml(item.gravadora || '—')}</td>
+          <td style="border:1px solid #ccc; padding:6px;">${escapeHtml(item.numero || '—')}</td>
+        </tr>`;
+      });
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html><head><title>Somax Studios - Relatório OFF</title>
+        <style>
+          * { margin:0; padding:0; box-sizing:border-box; }
+          body { font-family: 'Inter', sans-serif; margin: 1.5cm; background: white; color: black; }
+          h1 { font-size: 20pt; margin-bottom: 8px; }
+          .info { margin-bottom: 20px; font-size: 10pt; border-bottom: 1px solid #aaa; padding-bottom: 8px; }
+          table { width: 100%; border-collapse: collapse; font-size: 9pt; margin-top: 12px; }
+          th { background: #f0f0f0; border: 1px solid #aaa; padding: 8px; text-align: left; }
+          td { border: 1px solid #ddd; padding: 6px; }
+          .footer { margin-top: 20px; font-size: 8pt; text-align: center; color: #555; }
+        </style>
+        </head><body>
+        <h1>Somax Studios · Catálogo OFF Stream</h1>
+        <div class="info"><strong>Filtros aplicados:</strong> ${filtrosTexto}<br>
+        <strong>Total de itens:</strong> ${totalItens} &nbsp;|&nbsp; <strong>Gerado em:</strong> ${dataHora}</div>
+        <table>
+          <thead><tr><th>#</th><th>Título</th><th>Artista</th><th>Prateleira</th><th>Formato</th><th>Gravadora</th><th>Número</th></tr></thead>
+          <tbody>${linhasTabela || '<tr><td colspan="7">Nenhum registro encontrado</td></tr>'}</tbody>
+        </table>
+        <div class="footer">Somax Studios - Relatório oficial de produtos pendentes (OFF)</div>
+        </body></html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
+
     async function carregarDadosApp() {
       if (!appLoadingOverlay) return;
       appLoadingOverlay.classList.remove('hidden');
@@ -555,7 +736,7 @@
         renderizarTabela();
         atualizarPaginacaoInfo();
         dataAtualizacaoSpan.innerText = `Atualizado: ${new Date().toLocaleString('pt-BR')}`;
-        aplicarFiltros(); 
+        aplicarFiltros();
       } catch (err) {
         console.error(err);
         tableBody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-red-400 text-sm">Erro ao carregar: ${err.message}</td></tr>`;
@@ -564,46 +745,42 @@
       }
     }
 
-    // --- LOGOUT ---
     async function logout() {
       await supabase.auth.signOut();
-      // Resetar estados
       todosProdutosOff = [];
       dadosFiltrados = [];
       tableBody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-gray-400">Faça login para visualizar</td></tr>`;
-      // Esconder app e mostrar login
       appContainer.style.display = 'none';
       loginContainer.style.display = 'flex';
-      // limpar possíveis filtros
     }
 
-    // --- LOGIN handler ---
     async function handleLogin(email, password) {
       const errorDiv = document.getElementById('loginErrorMsg');
       errorDiv.classList.add('hidden');
+
       try {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        // sucesso: esconde login, mostra app e carrega dados
+
         loginContainer.style.display = 'none';
         appContainer.style.display = 'block';
-        // recarregar dados com sessão ativa
+
         await carregarDadosApp();
-        // reaplicar ícones lucide na área principal
         lucide.createIcons();
+
       } catch (err) {
         errorDiv.innerText = `Erro: ${err.message || 'Credenciais inválidas'}`;
         errorDiv.classList.remove('hidden');
       }
     }
 
-    // --- Verificar sessão existente ao iniciar ---
     async function verificarSessao() {
       const { data: { session } } = await supabase.auth.getSession();
+
       if (session) {
-        // Já logado: mostrar app e carregar dados
         loginContainer.style.display = 'none';
         appContainer.style.display = 'block';
+
         await carregarDadosApp();
         lucide.createIcons();
       } else {
@@ -612,43 +789,55 @@
       }
     }
 
-    // --- Configurar eventos (botões do app) ---
     function configurarEventosApp() {
       searchInput.addEventListener('input', aplicarFiltros);
       shelfFilter.addEventListener('change', aplicarFiltros);
       formatoFilter.addEventListener('change', aplicarFiltros);
+      gravadoraFilter.addEventListener('change', aplicarFiltros);
+      identificacaoFilter.addEventListener('change', aplicarFiltros);
+
       clearFiltersBtn.addEventListener('click', limparFiltros);
       btnRefresh.addEventListener('click', () => carregarDadosApp());
       btnExportCSV.addEventListener('click', exportarCSV);
       btnExportPDF.addEventListener('click', exportarPDF);
+      btnPrintReport.addEventListener('click', imprimirRelatorioCompleto);
       btnLogout.addEventListener('click', logout);
     }
 
-    // Evento do botão login
     document.getElementById('btnLogin').addEventListener('click', () => {
       const email = document.getElementById('loginEmail').value.trim();
       const password = document.getElementById('loginPassword').value;
+
       if (!email || !password) {
         const errorDiv = document.getElementById('loginErrorMsg');
         errorDiv.innerText = 'Preencha e-mail e senha.';
         errorDiv.classList.remove('hidden');
         return;
       }
+
       handleLogin(email, password);
     });
 
-    // Permitir tecla Enter nos campos de login
     const pwdField = document.getElementById('loginPassword');
     const emailField = document.getElementById('loginEmail');
+
     const loginHandler = () => {
       const email = emailField.value.trim();
       const password = pwdField.value;
-      if (email && password) handleLogin(email, password);
-    };
-    pwdField.addEventListener('keypress', (e) => { if (e.key === 'Enter') loginHandler(); });
-    emailField.addEventListener('keypress', (e) => { if (e.key === 'Enter') loginHandler(); });
 
-    // Inicialização geral: verifica sessão e configura eventos do app
+      if (email && password) {
+        handleLogin(email, password);
+      }
+    };
+
+    pwdField.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') loginHandler();
+    });
+
+    emailField.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') loginHandler();
+    });
+
     configurarEventosApp();
     verificarSessao();
   </script>
