@@ -230,8 +230,8 @@ async function fetchTotalCount() {
     let query = supabase.from('catalogo').select('*', { count: 'exact', head: true });
 
     if (currentSearch) {
-        const termoLimpo = currentSearch.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-        query = query.ilike('texto_busca', `%${termoLimpo}%`);
+    const termoLimpo = currentSearch.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    query = query.or(`texto_busca.ilike.%${termoLimpo}%,numero.ilike.%${termoLimpo}%`);
     }
 
     if (currentFormato) query = query.eq('formato', currentFormato);
@@ -283,8 +283,8 @@ async function buscarProdutos(resetPage = true) {
     let query = supabase.from('catalogo').select('*');
 
     if (currentSearch) {
-        const termoLimpo = currentSearch.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-        query = query.ilike('texto_busca', `%${termoLimpo}%`);
+    const termoLimpo = currentSearch.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    query = query.or(`texto_busca.ilike.%${termoLimpo}%,numero.ilike.%${termoLimpo}%`);
     }
 
     if (currentFormato) query = query.eq('formato', currentFormato);
@@ -914,20 +914,28 @@ async function buscarUltimoND() {
     if (!el) return;
 
     const prefixos = {
-        'ND-TP': 'Tape',
-        'ND-CD': 'CD',
-        'ND-LP': 'LP',
-        'ND-VN': 'Vinil',
-        'ND-DT': 'DATE'
+        'ND-TP': 'ND Tape',
+        'ND-CD': 'ND CD',
+        'ND-LP': 'ND LP',
+        'ND-VN': 'ND Vinil',
+        'ND-DT': 'ND DAT',
+
+        'ID-TP': 'ID Tape',
+        'ID-CD': 'ID CD',
+        'ID-LP': 'ID LP',
+        'ID-VN': 'ID Vinil',
+        'ID-DT': 'ID DAT',
     };
 
     const { data, error } = await supabase
         .from('catalogo')
         .select('numero')
-        .ilike('numero', 'ND-%');
+        .or(
+            'numero.ilike.ND-%,numero.ilike.ID-%'
+        );
 
     if (error) {
-        console.error('Erro ao buscar último ND:', error);
+        console.error('Erro ao buscar últimos códigos:', error);
         el.textContent = 'Erro ao carregar';
         return;
     }
@@ -939,13 +947,19 @@ async function buscarUltimoND() {
     });
 
     (data || []).forEach(item => {
-        const numero = (item.numero || '').trim();
+        const numero = (item.numero || '').trim().toUpperCase();
 
         Object.keys(prefixos).forEach(prefixo => {
-            const regex = new RegExp(`^${prefixo}(\\d+)$`, 'i');
+
+            const regex = new RegExp(
+                `^${prefixo.replace('-', '\\-')}(\\d+)$`,
+                'i'
+            );
+
             const match = numero.match(regex);
 
             if (match) {
+
                 const valor = parseInt(match[1], 10);
 
                 if (valor > maiores[prefixo]) {
@@ -957,6 +971,7 @@ async function buscarUltimoND() {
 
     const html = Object.entries(prefixos)
         .map(([prefixo, label]) => {
+
             const maior = maiores[prefixo];
 
             if (!maior) {
@@ -971,7 +986,9 @@ async function buscarUltimoND() {
             return `
                 <span class="inline-flex items-center gap-1 bg-zinc-800 border border-yellow-700/40 rounded-lg px-2 py-1 mr-2 mb-2">
                     <span class="text-zinc-400">${label}:</span>
-                    <strong class="text-yellow-400">${prefixo}${String(maior).padStart(4, '0')}</strong>
+                    <strong class="text-yellow-400">
+                        ${prefixo}${String(maior).padStart(4, '0')}
+                    </strong>
                 </span>
             `;
         })
