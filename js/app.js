@@ -594,7 +594,7 @@ function iniciarEdicao(elemento) {
                 <option value="CD">CD</option>
                 <option value="Vinil">Vinil</option>
                 <option value="LP">LP</option>
-                <option value="DATE">DATE</option>
+                <option value="DAT">DAT</option>
             `;
             inputElement.value = currentValue;
             break;
