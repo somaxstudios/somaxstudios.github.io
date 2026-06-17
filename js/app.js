@@ -1,5 +1,6 @@
 import { inicializarDashboard } from './dashboard.js';
 import { supabase } from './supabase-client.js';
+import { criarGrupoCompacto, listarGruposCompactos } from './compactos.js';
 
 // Elementos DOM
 const tableBody = document.getElementById('tableBody');
@@ -32,6 +33,129 @@ let currentGravadora = '';
 let currentSort = 'created_desc';
 
 let salvandoInline = false;
+
+// ================== GRUPOS COMPACTOS ==================
+let produtosEmGrupoIds = new Set();
+let gruposCompactosCache = [];
+
+async function carregarGruposDaPrateleira(prateleira) {
+    if (!prateleira) {
+        produtosEmGrupoIds.clear();
+        return;
+    }
+    const grupos = await listarGruposCompactos(prateleira);
+    gruposCompactosCache = grupos;
+    produtosEmGrupoIds.clear();
+    grupos.forEach(grupo => {
+        (grupo.produtos_ids || []).forEach(id => produtosEmGrupoIds.add(Number(id)));
+    });
+}
+
+// ================== FUNÇÕES AUXILIARES PARA NÚMERO ==================
+function normalizarNumero(numero) {
+    if (numero === null || numero === undefined) return null;
+    const str = String(numero).trim();
+    return str === '' ? null : str.toUpperCase();
+}
+
+function ehCodigoAutomatico(numero) {
+    const norm = normalizarNumero(numero);
+    if (!norm) return false;
+    return /^(ND|ID)-[A-Z]{2}\d+$/.test(norm);
+}
+
+function separarCodigoAutomatico(numero) {
+    const norm = normalizarNumero(numero);
+    if (!norm) return null;
+    const match = norm.match(/^((?:ND|ID)-[A-Z]{2})(\d+)$/);
+    if (!match) return null;
+    return {
+        prefixo: match[1],
+        numero: parseInt(match[2], 10),
+        tamanho: match[2].length
+    };
+}
+
+async function buscarNumeroExistente(numero, ignorarId = null) {
+    const numeroNorm = normalizarNumero(numero);
+    if (!numeroNorm) return null;
+
+    let query = supabase
+        .from('catalogo')
+        .select('id, titulo, artista, gravadora, formato, numero')
+        .eq('numero', numeroNorm)
+        .limit(1);
+
+    if (ignorarId) {
+        query = query.neq('id', ignorarId);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+        console.error('Erro ao consultar número existente:', error);
+        throw error;
+    }
+    return data && data.length ? data[0] : null;
+}
+
+async function buscarProximoCodigoDisponivel(numeroBase, ignorarId = null) {
+    const partes = separarCodigoAutomatico(numeroBase);
+    if (!partes) return normalizarNumero(numeroBase);
+
+    const { prefixo, tamanho } = partes;
+
+    const { data, error } = await supabase
+        .from('catalogo')
+        .select('id, numero')
+        .like('numero', `${prefixo}%`)
+        .not('numero', 'is', null);
+
+    if (error) {
+        console.error('Erro ao buscar próximo código:', error);
+        throw error;
+    }
+
+    let maior = 0;
+    (data || []).forEach(item => {
+        if (ignorarId && String(item.id) === String(ignorarId)) return;
+        const atual = separarCodigoAutomatico(item.numero);
+        if (atual && atual.prefixo === prefixo && atual.numero > maior) {
+            maior = atual.numero;
+        }
+    });
+
+    return `${prefixo}${String(maior + 1).padStart(tamanho, '0')}`;
+}
+
+async function validarNumeroAntesDeSalvar(numero, ignorarId = null) {
+    const numeroNorm = normalizarNumero(numero);
+    if (!numeroNorm) {
+        return { permitido: true, numero: null, conflito: null };
+    }
+
+    const existente = await buscarNumeroExistente(numeroNorm, ignorarId);
+    if (!existente) {
+        return { permitido: true, numero: numeroNorm, conflito: null };
+    }
+
+    if (ehCodigoAutomatico(numeroNorm)) {
+        const proximo = await buscarProximoCodigoDisponivel(numeroNorm, ignorarId);
+        return {
+            permitido: true,
+            numero: proximo,
+            conflito: existente,
+            aviso: `O número ${numeroNorm} já existe (${existente.titulo} - ${existente.artista}).\nO sistema usará o próximo disponível: ${proximo}`
+        };
+    }
+
+    return {
+        permitido: false,
+        numero: numeroNorm,
+        conflito: existente,
+        mensagem: `❌ Não é possível salvar.\nO número "${numeroNorm}" já existe no catálogo.\n\nProduto existente:\nTítulo: ${existente.titulo}\nArtista: ${existente.artista}\nGravadora: ${existente.gravadora || '-'}\nFormato: ${existente.formato || '-'}`
+    };
+}
+// ================== FIM DAS FUNÇÕES PARA NÚMERO ==================
 
 // Helpers
 function escapeHtml(str) {
@@ -223,6 +347,7 @@ function mostrarDashboard() {
     document.getElementById('tabDashboard').classList.add('active');
     document.getElementById('tabCatalogo').classList.remove('active');
     carregarDashboard();
+    buscarUltimoND();
 }
 
 // Total com filtros
@@ -230,8 +355,8 @@ async function fetchTotalCount() {
     let query = supabase.from('catalogo').select('*', { count: 'exact', head: true });
 
     if (currentSearch) {
-    const termoLimpo = currentSearch.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    query = query.or(`texto_busca.ilike.%${termoLimpo}%,numero.ilike.%${termoLimpo}%`);
+        const termoLimpo = currentSearch.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        query = query.or(`texto_busca.ilike.%${termoLimpo}%,numero.ilike.%${termoLimpo}%`);
     }
 
     if (currentFormato) query = query.eq('formato', currentFormato);
@@ -269,7 +394,7 @@ async function buscarProdutos(resetPage = true) {
 
     tableBody.innerHTML = `
         <tr>
-            <td colspan="10" class="p-8 text-center text-zinc-500 animate-pulse">
+            <td colspan="11" class="p-8 text-center text-zinc-500 animate-pulse">
                 A carregar registos...
             </td>
         </tr>
@@ -283,8 +408,8 @@ async function buscarProdutos(resetPage = true) {
     let query = supabase.from('catalogo').select('*');
 
     if (currentSearch) {
-    const termoLimpo = currentSearch.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    query = query.or(`texto_busca.ilike.%${termoLimpo}%,numero.ilike.%${termoLimpo}%`);
+        const termoLimpo = currentSearch.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        query = query.or(`texto_busca.ilike.%${termoLimpo}%,numero.ilike.%${termoLimpo}%`);
     }
 
     if (currentFormato) query = query.eq('formato', currentFormato);
@@ -319,7 +444,7 @@ async function buscarProdutos(resetPage = true) {
         console.error('Erro ao buscar catálogo:', error);
         tableBody.innerHTML = `
             <tr>
-                <td colspan="10" class="p-8 text-center text-red-400">
+                <td colspan="11" class="p-8 text-center text-red-400">
                     Falha ao carregar os dados.
                 </td>
             </tr>
@@ -436,6 +561,8 @@ async function duplicarProduto(item) {
     buscarProdutos(false);
     carregarDashboard();
     carregarOpcoesGravadoras();
+    await buscarUltimoND();
+    if (currentPrateleira) await carregarGruposDaPrateleira(currentPrateleira);
 }
 
 // Render tabela
@@ -457,6 +584,11 @@ function renderTable(data) {
         tr.dataset.id = item.id;
 
         const gravadoraLabel = item.gravadora || '-';
+        const estaEmGrupo = produtosEmGrupoIds.has(item.id);
+        const badgeCompacto = estaEmGrupo ? '<span class="ml-2 text-xs bg-amber-800/50 text-amber-300 px-1.5 py-0.5 rounded-full">🔗 Compacto</span>' : '';
+
+        // Verifica o estado booleano de fora_da_prateleira
+        const isFora = item.fora_da_prateleira === true;
 
         tr.innerHTML = `
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
@@ -497,7 +629,7 @@ function renderTable(data) {
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Nº do Tape</span>
                 <span class="editable-field" data-field="numero" data-id="${item.id}" data-value="${escapeAttr(item.numero || '')}">
-                    <span class="numero-display bg-zinc-800 px-2 py-1 rounded text-xs text-zinc-300 border border-zinc-700">${escapeHtml(item.numero || '-')}</span>
+                    <span class="numero-display bg-zinc-800 px-2 py-1 rounded text-xs text-zinc-300 border border-zinc-700">${escapeHtml(item.numero || '-')}${badgeCompacto}</span>
                 </span>
             </td>
 
@@ -522,16 +654,31 @@ function renderTable(data) {
                 </span>
             </td>
 
+            <!-- NOVO: Célula para Estado Físico (Fora da Prateleira) -->
+            <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800 align-middle">
+                <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Estado Físico</span>
+                <button 
+                    class="btn-status-master px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors flex items-center gap-1.5
+                    ${isFora 
+                        ? 'bg-amber-950/40 text-amber-400 border-amber-800/60 hover:bg-amber-900/40' 
+                        : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-300 hover:bg-zinc-800'}"
+                    data-id="${item.id}" 
+                    data-status="${isFora}"
+                >
+                    ${isFora ? '⚠️ Fora da Prateleira na Master' : '✓ Na Prateleira'}
+                </button>
+            </td>
+
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Ações</span>
-
-                <button class="duplicar-btn bg-indigo-800/40 hover:bg-indigo-700 text-white text-xs px-3 py-1 rounded transition mr-2 mb-2 md:mb-0" data-id="${item.id}">
-                    📄 Duplicar
-                </button>
-
-                <button class="delete-btn bg-red-800/40 hover:bg-red-700 text-white text-xs px-3 py-1 rounded transition" data-id="${item.id}">
-                    🗑️ Excluir
-                </button>
+                <div class="flex flex-wrap gap-2">
+                    <button class="duplicar-btn bg-indigo-800/40 hover:bg-indigo-700 text-white text-xs px-3 py-1 rounded transition" data-id="${item.id}">
+                        📄 Duplicar
+                    </button>
+                    <button class="delete-btn bg-red-800/40 hover:bg-red-700 text-white text-xs px-3 py-1 rounded transition" data-id="${item.id}">
+                        🗑️ Excluir
+                    </button>
+                </div>
             </td>
         `;
 
@@ -553,6 +700,8 @@ function renderTable(data) {
                 } else {
                     buscarProdutos(true);
                     carregarDashboard();
+                    await buscarUltimoND();
+                    if (currentPrateleira) await carregarGruposDaPrateleira(currentPrateleira);
                 }
             }
         });
@@ -564,6 +713,17 @@ function renderTable(data) {
             iniciarEdicao(el);
         });
     });
+
+    // Após renderizar, actualizar visibilidade do botão de grupo
+    atualizarVisibilidadeBotaoGrupo();
+}
+
+// Função para mostrar/esconder o botão "Criar Grupo Compacto"
+function atualizarVisibilidadeBotaoGrupo() {
+    const btnGrupo = document.getElementById('btnCriarGrupoCompacto');
+    if (!btnGrupo) return;
+    const checkboxesMarcados = document.querySelectorAll('.select-produto:checked');
+    btnGrupo.style.display = checkboxesMarcados.length >= 2 ? 'inline-flex' : 'none';
 }
 
 // Edição inline
@@ -664,6 +824,28 @@ function iniciarEdicao(elemento) {
             novoValor = inputElement.value || null;
         }
 
+        if (field === 'numero') {
+            try {
+                const validacaoNumero = await validarNumeroAntesDeSalvar(novoValor, id);
+                if (!validacaoNumero.permitido) {
+                    alert(validacaoNumero.mensagem);
+                    salvandoInline = false;
+                    elemento.dataset.editando = 'false';
+                    buscarProdutos(false);
+                    return;
+                }
+                if (validacaoNumero.aviso) alert(validacaoNumero.aviso);
+                novoValor = validacaoNumero.numero;
+            } catch (err) {
+                console.error(err);
+                alert('Erro ao consultar número existente.');
+                salvandoInline = false;
+                elemento.dataset.editando = 'false';
+                buscarProdutos(false);
+                return;
+            }
+        }
+
         const { error } = await supabase
             .from('catalogo')
             .update({ [field]: novoValor })
@@ -680,6 +862,9 @@ function iniciarEdicao(elemento) {
         }
 
         buscarProdutos(false);
+        carregarDashboard();
+        await buscarUltimoND();
+        if (currentPrateleira) await carregarGruposDaPrateleira(currentPrateleira);
     };
 
     elemento.innerHTML = '';
@@ -724,48 +909,66 @@ async function salvarProduto() {
     else podeLancarVal = false;
 
     const gravadoraInput = document.getElementById('addGravadora').value.trim();
+    const gravadora = gravadoraInput !== '' ? gravadoraInput : "Sem Identificação";
 
-    const gravadora = gravadoraInput !== ''
-        ? gravadoraInput
-        : "Sem Identificação";
+    const numeroDigitado = document.getElementById('addNumero').value.trim();
 
-    const novoProduto = {
-        titulo,
-        artista,
-        gravadora,
-        prateleira: document.getElementById('addPrateleira').value || null,
-        formato: document.getElementById('addFormato').value || null,
-        numero: document.getElementById('addNumero').value || null,
-        stream_status: document.getElementById('addStream').value || null,
-        taken_down: document.getElementById('addTakenDown').value === 'true',
-        pode_lancar: podeLancarVal
-    };
+    try {
+        const validacaoNumero = await validarNumeroAntesDeSalvar(numeroDigitado);
+        if (!validacaoNumero.permitido) {
+            alert(validacaoNumero.mensagem);
+            btn.innerText = "Salvar no Catálogo";
+            btn.disabled = false;
+            return;
+        }
+        if (validacaoNumero.aviso) alert(validacaoNumero.aviso);
+        const numeroFinal = validacaoNumero.numero;
 
-    const { error } = await supabase.from('catalogo').insert([novoProduto]);
+        const novoProduto = {
+            titulo,
+            artista,
+            gravadora,
+            prateleira: document.getElementById('addPrateleira').value || null,
+            formato: document.getElementById('addFormato').value || null,
+            numero: numeroFinal,
+            stream_status: document.getElementById('addStream').value || null,
+            taken_down: document.getElementById('addTakenDown').value === 'true',
+            pode_lancar: podeLancarVal
+        };
 
-    btn.innerText = "Salvar no Catálogo";
-    btn.disabled = false;
+        const { error } = await supabase.from('catalogo').insert([novoProduto]);
 
-    if (error) {
-        console.error('Erro ao inserir produto:', error);
-        alert("Erro ao registar. Veja o console.");
-        return;
+        btn.innerText = "Salvar no Catálogo";
+        btn.disabled = false;
+
+        if (error) {
+            console.error('Erro ao inserir produto:', error);
+            alert("Erro ao registar. Veja o console.");
+            return;
+        }
+
+        addSection.classList.add('hidden');
+        document.getElementById('addTitulo').value = '';
+        document.getElementById('addArtista').value = '';
+        document.getElementById('addGravadora').value = '';
+        document.getElementById('addNumero').value = '';
+        document.getElementById('addPrateleira').value = '';
+        document.getElementById('addFormato').value = '';
+        document.getElementById('addStream').value = 'On';
+        document.getElementById('addTakenDown').value = 'false';
+        document.getElementById('addPodeLancar').value = '';
+
+        buscarProdutos(false);
+        carregarOpcoesGravadoras();
+        carregarDashboard();
+        await buscarUltimoND();
+        if (currentPrateleira) await carregarGruposDaPrateleira(currentPrateleira);
+    } catch (err) {
+        console.error(err);
+        alert('Erro ao validar o número. Tente novamente.');
+        btn.innerText = "Salvar no Catálogo";
+        btn.disabled = false;
     }
-
-    addSection.classList.add('hidden');
-    document.getElementById('addTitulo').value = '';
-    document.getElementById('addArtista').value = '';
-    document.getElementById('addGravadora').value = '';
-    document.getElementById('addNumero').value = '';
-    document.getElementById('addPrateleira').value = '';
-    document.getElementById('addFormato').value = '';
-    document.getElementById('addStream').value = 'On';
-    document.getElementById('addTakenDown').value = 'false';
-    document.getElementById('addPodeLancar').value = '';
-
-    buscarProdutos(false);
-    carregarOpcoesGravadoras();
-    carregarDashboard();
 }
 
 // Exportar CSV
@@ -905,14 +1108,6 @@ function abrirFormularioComPreenchimento() {
     document.getElementById('addTitulo').focus();
 }
 
-// Eventos
-let timeoutId = null;
-
-function debounceBuscar() {
-    if (timeoutId) clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => buscarProdutos(true), 400);
-}
-
 async function buscarUltimoND() {
     const el = document.getElementById('ultimoNDInfo');
     if (!el) return;
@@ -923,7 +1118,6 @@ async function buscarUltimoND() {
         'ND-LP': 'ND LP',
         'ND-VN': 'ND Vinil',
         'ND-DT': 'ND DAT',
-
         'ID-TP': 'ID Tape',
         'ID-CD': 'ID CD',
         'ID-LP': 'ID LP',
@@ -931,79 +1125,116 @@ async function buscarUltimoND() {
         'ID-DT': 'ID DAT',
     };
 
-    const { data, error } = await supabase
-        .from('catalogo')
-        .select('numero')
-        .or(
-            'numero.ilike.ND-%,numero.ilike.ID-%'
-        );
+    try {
+        let html = '';
+        for (const [prefixo, label] of Object.entries(prefixos)) {
+            const { data, error } = await supabase
+                .from('catalogo')
+                .select('numero')
+                .like('numero', `${prefixo}%`)
+                .not('numero', 'is', null);
 
-    if (error) {
-        console.error('Erro ao buscar últimos códigos:', error);
-        el.textContent = 'Erro ao carregar';
-        return;
-    }
-
-    const maiores = {};
-
-    Object.keys(prefixos).forEach(prefixo => {
-        maiores[prefixo] = 0;
-    });
-
-    (data || []).forEach(item => {
-        const numero = (item.numero || '').trim().toUpperCase();
-
-        Object.keys(prefixos).forEach(prefixo => {
-
-            const regex = new RegExp(
-                `^${prefixo.replace('-', '\\-')}(\\d+)$`,
-                'i'
-            );
-
-            const match = numero.match(regex);
-
-            if (match) {
-
-                const valor = parseInt(match[1], 10);
-
-                if (valor > maiores[prefixo]) {
-                    maiores[prefixo] = valor;
-                }
+            if (error) {
+                console.error(`Erro ao buscar ${prefixo}:`, error);
+                continue;
             }
-        });
-    });
 
-    const html = Object.entries(prefixos)
-        .map(([prefixo, label]) => {
+            let maior = 0;
+            data?.forEach(item => {
+                const numero = item.numero.trim().toUpperCase();
+                const match = numero.match(new RegExp(`^${prefixo.replace('-', '\\-')}(\\d+)$`, 'i'));
+                if (match) {
+                    const valor = parseInt(match[1], 10);
+                    if (valor > maior) maior = valor;
+                }
+            });
 
-            const maior = maiores[prefixo];
-
-            if (!maior) {
-                return `
+            if (maior === 0) {
+                html += `
                     <span class="inline-flex items-center gap-1 bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1 mr-2 mb-2">
                         <span class="text-zinc-400">${label}:</span>
                         <strong class="text-zinc-500">Nenhum</strong>
                     </span>
                 `;
+            } else {
+                html += `
+                    <span class="inline-flex items-center gap-1 bg-zinc-800 border border-yellow-700/40 rounded-lg px-2 py-1 mr-2 mb-2">
+                        <span class="text-zinc-400">${label}:</span>
+                        <strong class="text-yellow-400">
+                            ${prefixo}${String(maior).padStart(4, '0')}
+                        </strong>
+                    </span>
+                `;
             }
+        }
+        el.innerHTML = html;
+    } catch (err) {
+        console.error('Erro em buscarUltimoND:', err);
+        el.textContent = 'Erro ao carregar';
+    }
+}
 
-            return `
-                <span class="inline-flex items-center gap-1 bg-zinc-800 border border-yellow-700/40 rounded-lg px-2 py-1 mr-2 mb-2">
-                    <span class="text-zinc-400">${label}:</span>
-                    <strong class="text-yellow-400">
-                        ${prefixo}${String(maior).padStart(4, '0')}
-                    </strong>
-                </span>
-            `;
-        })
-        .join('');
+// Criar grupo compacto a partir dos selecionados
+async function criarGrupoSelecionados() {
+    const checkboxes = document.querySelectorAll('.select-produto:checked');
+    const idsSelecionados = Array.from(checkboxes).map(cb => parseInt(cb.dataset.id));
 
-    el.innerHTML = html;
+    if (idsSelecionados.length < 2) {
+        alert('Selecione pelo menos dois produtos para formar um grupo compacto.');
+        return;
+    }
+
+    const algumEmGrupo = idsSelecionados.some(id => produtosEmGrupoIds.has(id));
+    if (algumEmGrupo) {
+        alert('Um ou mais produtos selecionados já pertencem a um grupo compacto. Remova o grupo primeiro (na página Gerar Códigos) ou escolha outros produtos.');
+        return;
+    }
+
+    const { data: produtosSel, error } = await supabase
+        .from('catalogo')
+        .select('prateleira')
+        .in('id', idsSelecionados);
+    if (error) {
+        alert('Erro ao obter prateleiras dos produtos.');
+        return;
+    }
+    const prateleiras = [...new Set(produtosSel.map(p => p.prateleira).filter(Boolean))];
+    if (prateleiras.length !== 1) {
+        alert('Os produtos selecionados pertencem a prateleiras diferentes. Não podem ser agrupados.');
+        return;
+    }
+    const prateleiraGrupo = prateleiras[0];
+
+    const confirmar = confirm(`Criar grupo compacto na prateleira "${prateleiraGrupo}" com ${idsSelecionados.length} produtos?`);
+    if (!confirmar) return;
+
+    const resultado = await criarGrupoCompacto(idsSelecionados, prateleiraGrupo);
+    if (resultado.sucesso) {
+        alert(resultado.mensagem);
+        checkboxes.forEach(cb => cb.checked = false);
+        await carregarGruposDaPrateleira(currentPrateleira);
+        buscarProdutos(false);
+        atualizarVisibilidadeBotaoGrupo();
+    } else {
+        alert(resultado.mensagem);
+    }
+}
+
+// Eventos
+let timeoutId = null;
+
+function debounceBuscar() {
+    if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => buscarProdutos(true), 400);
 }
 
 searchInput.addEventListener('input', debounceBuscar);
 filterFormato.addEventListener('change', () => buscarProdutos(true));
-filterPrateleira.addEventListener('change', () => buscarProdutos(true));
+filterPrateleira.addEventListener('change', async () => {
+    currentPrateleira = filterPrateleira.value;
+    await carregarGruposDaPrateleira(currentPrateleira);
+    buscarProdutos(true);
+});
 filterStream.addEventListener('change', () => buscarProdutos(true));
 filterPodeLancar.addEventListener('change', () => buscarProdutos(true));
 
@@ -1043,7 +1274,6 @@ document.getElementById('btnGoToPage').addEventListener('click', () => {
     let page = parseInt(document.getElementById('goToPage').value);
     if (isNaN(page)) page = 1;
     page = Math.min(Math.max(page, 1), totalPages);
-
     if (page !== currentPage) {
         currentPage = page;
         buscarProdutos(false);
@@ -1055,13 +1285,67 @@ document.getElementById('btnExportPDF').addEventListener('click', exportarPDF);
 document.getElementById('tabCatalogo').addEventListener('click', mostrarCatalogo);
 document.getElementById('tabDashboard').addEventListener('click', mostrarDashboard);
 
+// Botão Criar Grupo Compacto (deve existir no HTML)
+const btnCriarGrupo = document.getElementById('btnCriarGrupoCompacto');
+if (btnCriarGrupo) {
+    btnCriarGrupo.style.display = 'none';
+    btnCriarGrupo.addEventListener('click', criarGrupoSelecionados);
+}
+
+// Detectar mudanças nos checkboxes para mostrar/esconder o botão
+document.addEventListener('change', (e) => {
+    if (e.target && e.target.classList && e.target.classList.contains('select-produto')) {
+        atualizarVisibilidadeBotaoGrupo();
+    }
+});
+
+// NOVO: Ouvinte para controlar a saída do produto físico para a Masterização
+document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.btn-status-master');
+    if (!btn) return;
+
+    const produtoId = btn.getAttribute('data-id');
+    const statusAtual = btn.getAttribute('data-status') === 'true';
+    const novoStatus = !statusAtual; // Inverte o booleano
+
+    // Feedback visual de carregamento
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+
+    try {
+        const { error } = await supabase
+            .from('catalogo')
+            .update({ fora_da_prateleira: novoStatus })
+            .eq('id', produtoId);
+
+        if (error) throw error;
+
+        // Atualiza o estado do botão em tempo real na tela
+        btn.setAttribute('data-status', novoStatus.toString());
+        
+        if (novoStatus) {
+            btn.className = 'btn-status-master px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors flex items-center gap-1.5 bg-amber-950/40 text-amber-400 border-amber-800/60 hover:bg-amber-900/40';
+            btn.innerHTML = '⚠️ Fora da Prateleira na Master';
+        } else {
+            btn.className = 'btn-status-master px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors flex items-center gap-1.5 bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-300 hover:bg-zinc-800';
+            btn.innerHTML = '✓ Na Prateleira';
+        }
+
+    } catch (err) {
+        console.error('Erro ao atualizar estado da prateleira (Master):', err);
+        alert('Não foi possível alterar o status. Verifique sua conexão.');
+    } finally {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+    }
+});
+
 // Filtros recolhíveis
 const filterContent = document.getElementById('filterContent');
 const toggleBtn = document.getElementById('toggleFiltersBtn');
 
 if (filterContent && toggleBtn) {
     let filtersVisible = false;
-
     toggleBtn.addEventListener('click', () => {
         if (filtersVisible) {
             filterContent.style.display = 'none';
@@ -1070,10 +1354,8 @@ if (filterContent && toggleBtn) {
             filterContent.style.display = 'block';
             toggleBtn.innerHTML = '<span>✖</span> Fechar';
         }
-
         filtersVisible = !filtersVisible;
     });
-
     filterContent.style.display = 'none';
 }
 
