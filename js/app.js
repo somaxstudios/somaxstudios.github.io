@@ -211,7 +211,7 @@ function gerarOpcoesPrateleiras() {
     if (selectFilter.dataset.ready === 'true' && selectAdd.dataset.ready === 'true') return;
 
     const regras = {
-        1: 'J', 2: 'L', 3: 'L', 4: 'L', 5: 'L', 6: 'K', 7: 'M', 8: 'M'
+        1: 'J', 2: 'L', 3: 'L', 4: 'L', 5: 'L', 6: 'K', 7: 'M', 8: 'F'
     };
 
     for (let num = 1; num <= 8; num++) {
@@ -241,7 +241,7 @@ function gerarOpcoesPrateleiras() {
 
 function gerarOptionsPrateleiraHTML(valorAtual) {
     let html = '<option value="">— Limpar —</option>';
-    const regras = { 1: 'J', 2: 'L', 3: 'L', 4: 'L', 5: 'L', 6: 'K', 7: 'M', 8: 'M' };
+    const regras = { 1: 'J', 2: 'L', 3: 'L', 4: 'L', 5: 'L', 6: 'K', 7: 'M', 8: 'F' };
 
     for (let num = 1; num <= 8; num++) {
         const maxLetra = regras[num];
