@@ -12,6 +12,7 @@ const filterPrateleira = document.getElementById('filterPrateleira');
 const filterStream = document.getElementById('filterStream');
 const filterPodeLancar = document.getElementById('filterPodeLancar');
 const filterGravadora = document.getElementById('filterGravadora');
+const filterCompacto = document.getElementById('filterCompacto');
 const sortBy = document.getElementById('sortBy');
 const btnBuscar = document.getElementById('btnBuscar');
 const btnNovoGlobal = document.getElementById('btnNovoGlobal');
@@ -30,6 +31,7 @@ let currentPrateleira = '';
 let currentStream = '';
 let currentPodeLancar = '';
 let currentGravadora = '';
+let currentCompacto = '';
 let currentSort = 'created_desc';
 
 let salvandoInline = false;
@@ -37,17 +39,21 @@ let salvandoInline = false;
 // ================== GRUPOS COMPACTOS ==================
 let produtosEmGrupoIds = new Set();
 let gruposCompactosCache = [];
+// Mapeia ID do produto → código do grupo compacto
+let mapaProdutoGrupo = new Map();
 
-async function carregarGruposDaPrateleira(prateleira) {
-    if (!prateleira) {
-        produtosEmGrupoIds.clear();
-        return;
-    }
-    const grupos = await listarGruposCompactos(prateleira);
+async function carregarTodosOsGrupos() {
+    const grupos = await listarGruposCompactos(); // sem filtro de prateleira
     gruposCompactosCache = grupos;
     produtosEmGrupoIds.clear();
+    mapaProdutoGrupo.clear();
     grupos.forEach(grupo => {
-        (grupo.produtos_ids || []).forEach(id => produtosEmGrupoIds.add(Number(id)));
+        const codigo = grupo.codigo || 'SEM-COD';
+        (grupo.produtos_ids || []).forEach(id => {
+            const numId = Number(id);
+            produtosEmGrupoIds.add(numId);
+            mapaProdutoGrupo.set(numId, codigo);
+        });
     });
 }
 
@@ -350,6 +356,20 @@ function mostrarDashboard() {
     buscarUltimoND();
 }
 
+// Aplica o filtro de "Compacto" (sim/não) a uma query do Supabase
+function aplicarFiltroCompacto(query) {
+    if (currentCompacto === 'sim') {
+        const ids = Array.from(produtosEmGrupoIds);
+        if (ids.length > 0) return query.in('id', ids);
+        else return query; // tratado à parte (nenhum resultado)
+    } else if (currentCompacto === 'nao') {
+        const ids = Array.from(produtosEmGrupoIds);
+        if (ids.length > 0) return query.not('id', 'in', ids);
+        else return query; // todos não estão em grupo, sem filtro extra
+    }
+    return query;
+}
+
 // Total com filtros
 async function fetchTotalCount() {
     let query = supabase.from('catalogo').select('*', { count: 'exact', head: true });
@@ -365,12 +385,20 @@ async function fetchTotalCount() {
     if (currentPodeLancar !== '') query = query.eq('pode_lancar', currentPodeLancar === 'true');
     if (currentGravadora) query = query.eq('gravadora', currentGravadora);
 
+    if (currentCompacto === 'sim' && produtosEmGrupoIds.size === 0) {
+        // Nenhum produto em grupo, então não há resultados possíveis
+        return 0;
+    }
+    query = aplicarFiltroCompacto(query);
+
     const { count } = await query;
     return count || 0;
 }
 
 // Buscar produtos
 async function buscarProdutos(resetPage = true) {
+    await carregarTodosOsGrupos();
+
     if (resetPage) currentPage = 1;
 
     currentSearch = searchInput.value.trim();
@@ -379,6 +407,7 @@ async function buscarProdutos(resetPage = true) {
     currentStream = filterStream.value;
     currentPodeLancar = filterPodeLancar.value;
     currentGravadora = filterGravadora ? filterGravadora.value : '';
+    currentCompacto = filterCompacto ? filterCompacto.value : '';
     currentSort = sortBy ? sortBy.value : 'created_desc';
 
     totalRecords = await fetchTotalCount();
@@ -394,7 +423,7 @@ async function buscarProdutos(resetPage = true) {
 
     tableBody.innerHTML = `
         <tr>
-            <td colspan="11" class="p-8 text-center text-zinc-500 animate-pulse">
+            <td colspan="12" class="p-8 text-center text-zinc-500 animate-pulse">
                 A carregar registos...
             </td>
         </tr>
@@ -417,6 +446,13 @@ async function buscarProdutos(resetPage = true) {
     if (currentStream) query = query.eq('stream_status', currentStream);
     if (currentPodeLancar !== '') query = query.eq('pode_lancar', currentPodeLancar === 'true');
     if (currentGravadora) query = query.eq('gravadora', currentGravadora);
+
+    if (currentCompacto === 'sim' && produtosEmGrupoIds.size === 0) {
+        // Nenhum produto em grupo, então não há resultados possíveis
+        renderTable([]);
+        return;
+    }
+    query = aplicarFiltroCompacto(query);
 
     switch (currentSort) {
         case 'titulo_asc':
@@ -444,7 +480,7 @@ async function buscarProdutos(resetPage = true) {
         console.error('Erro ao buscar catálogo:', error);
         tableBody.innerHTML = `
             <tr>
-                <td colspan="11" class="p-8 text-center text-red-400">
+                <td colspan="12" class="p-8 text-center text-red-400">
                     Falha ao carregar os dados.
                 </td>
             </tr>
@@ -562,7 +598,7 @@ async function duplicarProduto(item) {
     carregarDashboard();
     carregarOpcoesGravadoras();
     await buscarUltimoND();
-    if (currentPrateleira) await carregarGruposDaPrateleira(currentPrateleira);
+    await carregarTodosOsGrupos();
 }
 
 // Render tabela
@@ -584,8 +620,10 @@ function renderTable(data) {
         tr.dataset.id = item.id;
 
         const gravadoraLabel = item.gravadora || '-';
-        const estaEmGrupo = produtosEmGrupoIds.has(item.id);
-        const badgeCompacto = estaEmGrupo ? '<span class="ml-2 text-xs bg-amber-800/50 text-amber-300 px-1.5 py-0.5 rounded-full">🔗 Compacto</span>' : '';
+        const codigoGrupo = mapaProdutoGrupo.get(item.id) || null;
+        const badgeCompacto = codigoGrupo
+            ? `<span class="bg-emerald-700/30 text-emerald-300 px-2 py-1 rounded-full text-xs border border-emerald-600">🔗 ${codigoGrupo}</span>`
+            : '<span class="text-zinc-600 text-xs">—</span>';
 
         // Verifica o estado booleano de fora_da_prateleira
         const isFora = item.fora_da_prateleira === true;
@@ -629,7 +667,7 @@ function renderTable(data) {
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Nº do Tape</span>
                 <span class="editable-field" data-field="numero" data-id="${item.id}" data-value="${escapeAttr(item.numero || '')}">
-                    <span class="numero-display bg-zinc-800 px-2 py-1 rounded text-xs text-zinc-300 border border-zinc-700">${escapeHtml(item.numero || '-')}${badgeCompacto}</span>
+                    <span class="numero-display bg-zinc-800 px-2 py-1 rounded text-xs text-zinc-300 border border-zinc-700">${escapeHtml(item.numero || '-')}</span>
                 </span>
             </td>
 
@@ -670,6 +708,11 @@ function renderTable(data) {
             </td>
 
             <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
+                <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Compacto</span>
+                ${badgeCompacto}
+            </td>
+
+            <td class="block md:table-cell p-4 border-b border-zinc-800/50 md:border-b md:border-zinc-800">
                 <span class="md:hidden block text-xs font-semibold text-zinc-500 uppercase mb-1">Ações</span>
                 <div class="flex flex-wrap gap-2">
                     <button class="duplicar-btn bg-indigo-800/40 hover:bg-indigo-700 text-white text-xs px-3 py-1 rounded transition" data-id="${item.id}">
@@ -701,7 +744,7 @@ function renderTable(data) {
                     buscarProdutos(true);
                     carregarDashboard();
                     await buscarUltimoND();
-                    if (currentPrateleira) await carregarGruposDaPrateleira(currentPrateleira);
+                    await carregarTodosOsGrupos();
                 }
             }
         });
@@ -864,7 +907,7 @@ function iniciarEdicao(elemento) {
         buscarProdutos(false);
         carregarDashboard();
         await buscarUltimoND();
-        if (currentPrateleira) await carregarGruposDaPrateleira(currentPrateleira);
+        await carregarTodosOsGrupos();
     };
 
     elemento.innerHTML = '';
@@ -962,7 +1005,7 @@ async function salvarProduto() {
         carregarOpcoesGravadoras();
         carregarDashboard();
         await buscarUltimoND();
-        if (currentPrateleira) await carregarGruposDaPrateleira(currentPrateleira);
+        await carregarTodosOsGrupos();
     } catch (err) {
         console.error(err);
         alert('Erro ao validar o número. Tente novamente.');
@@ -1212,7 +1255,7 @@ async function criarGrupoSelecionados() {
     if (resultado.sucesso) {
         alert(resultado.mensagem);
         checkboxes.forEach(cb => cb.checked = false);
-        await carregarGruposDaPrateleira(currentPrateleira);
+        await carregarTodosOsGrupos();
         buscarProdutos(false);
         atualizarVisibilidadeBotaoGrupo();
     } else {
@@ -1232,7 +1275,6 @@ searchInput.addEventListener('input', debounceBuscar);
 filterFormato.addEventListener('change', () => buscarProdutos(true));
 filterPrateleira.addEventListener('change', async () => {
     currentPrateleira = filterPrateleira.value;
-    await carregarGruposDaPrateleira(currentPrateleira);
     buscarProdutos(true);
 });
 filterStream.addEventListener('change', () => buscarProdutos(true));
@@ -1240,6 +1282,10 @@ filterPodeLancar.addEventListener('change', () => buscarProdutos(true));
 
 if (filterGravadora) {
     filterGravadora.addEventListener('change', () => buscarProdutos(true));
+}
+
+if (filterCompacto) {
+    filterCompacto.addEventListener('change', () => buscarProdutos(true));
 }
 
 if (sortBy) {
