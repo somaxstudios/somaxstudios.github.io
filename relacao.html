@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
-  <title>SOMAX STUDIOS — Off Stream Mobile | Admin</title>
+  <title>SOMAX STUDIOS — Catálogo Mobile | Admin</title>
 
   <!-- Tailwind + Fonts + Lucide + jsPDF + autoTable -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -13,6 +13,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
   <style>
+    /* (mesmo CSS anterior - mantenha igual) */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Inter', sans-serif;
@@ -34,6 +35,16 @@
       background: rgba(231,76,60,0.15);
       color: #e74c3c;
       border: 1px solid rgba(231,76,60,0.3);
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .badge-on {
+      background: rgba(46,204,113,0.15);
+      color: #2ecc71;
+      border: 1px solid rgba(46,204,113,0.3);
       padding: 4px 8px;
       border-radius: 999px;
       font-size: 0.7rem;
@@ -135,137 +146,45 @@
     ::-webkit-scrollbar-track { background: #111; }
     ::-webkit-scrollbar-thumb { background: #c9a84c; border-radius: 10px; }
 
-    .login-card {
-      animation: fadeUp 0.4s ease-out;
-    }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(15px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .app-loading {
-      background: rgba(0,0,0,0.8);
-      backdrop-filter: blur(4px);
-    }
-
-    /* ========== CSS DE IMPRESSÃO PROFISSIONAL ========== */
+    /* Impressão profissional */
     @media print {
       .no-print, .filter-section, .pagination, #btnLogout, #btnRefresh, #btnExportCSV, #btnExportPDF, #btnPrintReport,
-      .search-input, .filter-select, #clearFilters, #loginContainer, .bg-card .pagination, .bg-card > div:last-child,
+      .search-input, .filter-select, #clearFilters, .bg-card .pagination, .bg-card > div:last-child,
       button, .no-print, .print\:hidden {
         display: none !important;
       }
-
       body, #appContainer, main, .bg-card, .metric-card, .data-table, .data-table tbody, .data-table td, .data-table th {
         background: white !important;
         color: black !important;
         border-color: #ccc !important;
         box-shadow: none !important;
       }
-
-      @page {
-        size: portrait;
-        margin: 1.2cm;
-      }
-
+      @page { size: portrait; margin: 1.2cm; }
       .gold-gradient, .bg-gradient-to-r, .metric-card, .bg-card {
         background: white !important;
         -webkit-text-fill-color: black !important;
         color: black !important;
         border: 1px solid #aaa !important;
       }
-
-      .data-table thead th {
-        background: #f0f0f0 !important;
-        color: black !important;
-        border-bottom: 2px solid #c9a84c !important;
-      }
-
-      .data-table tbody td {
-        border-bottom: 1px solid #ddd !important;
-        color: black !important;
-      }
-
-      .badge-off {
-        background: #fce4e4 !important;
-        color: #b91c1c !important;
-        border: 1px solid #b91c1c !important;
-      }
-
-      .print-report-header, .print-filters-info {
-        display: block !important;
-      }
-
-      .table-wrapper {
-        overflow: visible !important;
-      }
-      .data-table {
-        min-width: 100% !important;
-        font-size: 10pt !important;
-      }
-      .stats-grid {
-        display: flex;
-        justify-content: space-between;
-        gap: 8px;
-        margin-bottom: 12px;
-      }
-      .metric-card {
-        padding: 6px 8px;
-        text-align: center;
-        font-size: 9pt;
-      }
-      .metric-card p:first-child {
-        color: #555 !important;
-      }
-      .metric-card p:last-child {
-        color: #000 !important;
-      }
+      .data-table thead th { background: #f0f0f0 !important; color: black !important; border-bottom: 2px solid #c9a84c !important; }
+      .data-table tbody td { border-bottom: 1px solid #ddd !important; color: black !important; }
+      .badge-off { background: #fce4e4 !important; color: #b91c1c !important; border: 1px solid #b91c1c !important; }
+      .badge-on { background: #e0f7e8 !important; color: #0e6e2e !important; border: 1px solid #0e6e2e !important; }
+      .print-filters-info { display: block !important; }
+      .table-wrapper { overflow: visible !important; }
+      .data-table { min-width: 100% !important; font-size: 10pt !important; }
+      .stats-grid { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+      .metric-card { padding: 6px 8px; text-align: center; font-size: 9pt; }
+      .metric-card p:first-child { color: #555 !important; }
+      .metric-card p:last-child { color: #000 !important; }
     }
-
-    .print-filters-info {
-      display: none;
-    }
+    .print-filters-info { display: none; }
   </style>
 </head>
-<body class="antialiased">
-
-  <!-- TELA DE LOGIN -->
-  <div id="loginContainer" class="fixed inset-0 bg-black/95 z-[1000] flex items-center justify-center p-4 backdrop-blur-sm" style="display: flex;">
-    <div class="login-card max-w-md w-full bg-[#0c0c0c] border border-[#2a2a2a] rounded-2xl shadow-2xl p-6">
-      <div class="flex justify-center mb-4">
-        <div class="w-14 h-14 rounded-full bg-[#c9a84c]/15 flex items-center justify-center border border-[#c9a84c]/30">
-          <i data-lucide="lock" class="w-7 h-7 text-[#c9a84c]"></i>
-        </div>
-      </div>
-      <h2 class="text-center text-2xl font-bold gold-gradient mb-1">Somax Studios</h2>
-      <p class="text-center text-gray-400 text-xs mb-6">Acesso administrativo · OFF Stream</p>
-      
-      <div id="loginErrorMsg" class="bg-red-950/40 border border-red-800/50 text-red-300 text-xs rounded-lg p-2 mb-4 hidden text-center"></div>
-      
-      <div class="space-y-4">
-        <div>
-          <label class="block text-[11px] uppercase text-gray-400 mb-1">E-mail (admin)</label>
-          <div class="relative">
-            <i data-lucide="mail" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"></i>
-            <input type="email" id="loginEmail" value="visitantes@gmail.com" class="w-full bg-black/60 border border-[#2a2a2a] rounded-xl py-2.5 pl-9 pr-3 text-white text-sm focus:border-[#c9a84c] outline-none" placeholder="seu@email.com">
-          </div>
-        </div>
-        <div>
-          <label class="block text-[11px] uppercase text-gray-400 mb-1">Senha</label>
-          <div class="relative">
-            <i data-lucide="key" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"></i>
-            <input type="password" id="loginPassword" class="w-full bg-black/60 border border-[#2a2a2a] rounded-xl py-2.5 pl-9 pr-3 text-white text-sm focus:border-[#c9a84c] outline-none" placeholder="••••••••">
-          </div>
-        </div>
-        <button id="btnLogin" class="w-full bg-gradient-to-r from-[#c9a84c] to-[#a17f35] text-black font-bold py-2.5 rounded-xl transition-all hover:scale-[1.01] flex items-center justify-center gap-2">
-          <i data-lucide="log-in" class="w-4 h-4"></i> Entrar como Admin
-        </button>
-        <p class="text-[10px] text-center text-gray-500 mt-2">Acesso restrito · proteção RLS ativa</p>
-      </div>
-    </div>
-  </div>
+<body>
 
   <!-- APLICAÇÃO PRINCIPAL -->
-  <div id="appContainer" style="display: none;">
+  <div id="appContainer" style="display: block;">
     <main class="max-w-full px-4 py-5 md:px-6 md:py-8">
       
       <div class="flex flex-col gap-3 border-b border-[#2a2a2a] pb-5 mb-5">
@@ -274,9 +193,12 @@
             <div class="w-8 h-8 rounded-xl bg-[#c9a84c]/10 flex items-center justify-center">
               <i data-lucide="archive" class="w-4 h-4 text-[#c9a84c]"></i>
             </div>
-            <h1 class="text-xl font-black"><span class="gold-gradient">Off Stream</span></h1>
+            <h1 class="text-xl font-black"><span class="gold-gradient">Catálogo Mobile</span></h1>
           </div>
           <div class="flex gap-2 no-print flex-wrap">
+            <a href="/" id="btnVoltarIndex" class="bg-[#121212] border border-[#2a2a2a] rounded-xl px-3 py-2 text-xs flex items-center gap-1 hover:border-[#c9a84c]/50 transition-colors">
+              <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Index
+            </a>
             <button id="btnRefresh" class="bg-[#121212] border border-[#2a2a2a] rounded-xl px-3 py-2 text-xs flex items-center gap-1">
               <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Recarregar
             </button>
@@ -295,22 +217,22 @@
           </div>
         </div>
         <p class="text-gray-400 text-xs leading-relaxed">
-          Produtos já encontrados nas prateleiras, com status OFF (pendentes de upload).
+          Visualize todos os produtos do catálogo com status ON/OFF e controle de prateleiras.
         </p>
       </div>
 
-      <!-- Resumo de filtros para impressão (visível apenas no papel) -->
+      <!-- Resumo para impressão -->
       <div class="print-filters-info" style="margin-bottom: 12px; border-bottom: 1px solid #ccc; padding-bottom: 8px;">
-        <h3 class="text-lg font-bold">Somax Studios – Relatório de Catálogo OFF</h3>
+        <h3 class="text-lg font-bold">Somax Studios – Relatório de Catálogo</h3>
         <p id="printFilterSummary" class="text-sm">Filtros ativos: nenhum</p>
         <p class="text-xs text-gray-500">Gerado em: <span id="printDateSpan"></span></p>
       </div>
 
-      <!-- Cards resumo -->
+      <!-- Cards -->
       <div class="grid grid-cols-3 gap-3 mb-5">
         <div class="metric-card">
-          <p class="text-gray-400 text-[10px] uppercase">Total Off</p>
-          <p id="totalOffValue" class="text-2xl font-black text-red-400">0</p>
+          <p class="text-gray-400 text-[10px] uppercase">Total itens</p>
+          <p id="totalItemsValue" class="text-2xl font-black text-white">0</p>
         </div>
         <div class="metric-card">
           <p class="text-gray-400 text-[10px] uppercase">Prateleiras</p>
@@ -322,8 +244,21 @@
         </div>
       </div>
 
-      <!-- Filtros (ocultos na impressão) -->
+      <!-- Filtros -->
       <div class="filter-section bg-card rounded-xl p-4 mb-5 space-y-3 no-print">
+        <div>
+          <label class="block text-[10px] uppercase text-gray-400 mb-1">Status do produto</label>
+          <select id="statusFilter" class="filter-select py-2 text-sm">
+            <option value="all">Todos os produtos</option>
+            <option value="todos-com-prateleira">Todos com prateleira</option>
+            <option value="off-com-prateleira">OFF com prateleira</option>
+            <option value="off-sem-prateleira">OFF sem prateleira</option>
+            <option value="on-com-prateleira">ON com prateleira</option>
+            <option value="on-sem-prateleira">ON sem prateleira</option>
+            <option value="com-identificacao">Com identificação</option>
+            <option value="sem-identificacao">Sem identificação</option>
+          </select>
+        </div>
         <div>
           <label class="block text-[10px] uppercase text-gray-400 mb-1">Buscar</label>
           <div class="relative">
@@ -344,7 +279,7 @@
           <select id="gravadoraFilter" class="filter-select py-2 text-sm"></select>
         </div>
         <div>
-          <label class="block text-[10px] uppercase text-gray-400 mb-1">Identificação</label>
+          <label class="block text-[10px] uppercase text-gray-400 mb-1">Identificação (extra)</label>
           <select id="identificacaoFilter" class="filter-select py-2 text-sm">
             <option value="">Todos</option>
             <option value="somente-identificados">Retirar não identificados</option>
@@ -356,14 +291,14 @@
         </button>
       </div>
 
-      <!-- Estatísticas da prateleira (apenas tela) -->
+      <!-- Stats prateleira -->
       <div id="shelfStatsPanel" class="bg-gradient-to-r from-[#0f0f0f] to-[#151515] rounded-xl border border-[#2a2a2a] p-4 mb-5 hidden no-print">
         <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-          <h3 class="text-sm font-bold gold-gradient flex items-center gap-1"><i data-lucide="bar-chart-3" class="w-4 h-4"></i> Estatísticas</h3>
+          <h3 class="text-sm font-bold gold-gradient flex items-center gap-1"><i data-lucide="bar-chart-3" class="w-4 h-4"></i> Estatísticas da prateleira</h3>
           <span id="shelfNameBadge" class="bg-[#c9a84c]/10 px-2 py-0.5 rounded-full text-[#c9a84c] text-xs font-mono"></span>
         </div>
         <div class="stats-grid">
-          <div class="bg-black/30 rounded-lg p-2 text-center"><p class="text-xl font-black text-white" id="statTotal">0</p><p class="text-[9px] uppercase text-gray-400">Total OFF</p></div>
+          <div class="bg-black/30 rounded-lg p-2 text-center"><p class="text-xl font-black text-white" id="statTotal">0</p><p class="text-[9px] uppercase text-gray-400">Total itens</p></div>
           <div class="bg-black/30 rounded-lg p-2 text-center"><p class="text-xl font-black text-orange-400" id="statSemNumero">0</p><p class="text-[9px] uppercase text-gray-400">Sem Nº</p></div>
           <div class="bg-black/30 rounded-lg p-2 text-center"><p class="text-xl font-black text-red-400" id="statSemArtista">0</p><p class="text-[9px] uppercase text-gray-400">Sem Artista</p></div>
           <div class="bg-black/30 rounded-lg p-2 text-center"><p class="text-xl font-black text-amber-400" id="statSemTitulo">0</p><p class="text-[9px] uppercase text-gray-400">Sem Título</p></div>
@@ -379,7 +314,7 @@
             <thead>
               <tr><th>#</th><th>Título</th><th>Artista</th><th>Prateleira</th><th>Formato</th><th>Gravadora</th><th>Número</th><th>Status</th></tr>
             </thead>
-            <tbody id="tableBody"><tr><td colspan="8" class="text-center py-8 text-gray-400 text-sm">Autentique para carregar dados</td></tr></tbody>
+            <tbody id="tableBody"><tr><td colspan="8" class="text-center py-8 text-gray-400 text-sm">Carregando dados...</td></tr></tbody>
           </table>
         </div>
         <div class="flex flex-col sm:flex-row justify-between items-center gap-3 p-4 border-t border-[#2a2a2a] bg-black/20 no-print">
@@ -398,448 +333,19 @@
     </div>
   </div>
 
+  <!-- Importação do Supabase e do catálogo -->
+  <script type="importmap">
+    {
+      "imports": {
+        "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm"
+      }
+    }
+  </script>
+
   <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-
-    const supabaseUrl = 'https://ulbqzvztwrqmaxbzsmmv.supabase.co';
-    const supabaseKey = 'sb_publishable_shOmcA8udv3Tw0xKYzafAw_s1YXgbDk';
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Estado
-    let todosProdutosOff = [];
-    let dadosFiltrados = [];
-    let currentPage = 1;
-    const rowsPerPage = 20;
-
-    // DOM elements
-    const appContainer = document.getElementById('appContainer');
-    const loginContainer = document.getElementById('loginContainer');
-    const appLoadingOverlay = document.getElementById('appLoadingOverlay');
-    const tableBody = document.getElementById('tableBody');
-    const searchInput = document.getElementById('searchInput');
-    const shelfFilter = document.getElementById('shelfFilter');
-    const formatoFilter = document.getElementById('formatoFilter');
-    const gravadoraFilter = document.getElementById('gravadoraFilter');
-    const identificacaoFilter = document.getElementById('identificacaoFilter');
-    const clearFiltersBtn = document.getElementById('clearFilters');
-    const btnRefresh = document.getElementById('btnRefresh');
-    const btnExportCSV = document.getElementById('btnExportCSV');
-    const btnExportPDF = document.getElementById('btnExportPDF');
-    const btnPrintReport = document.getElementById('btnPrintReport');
-    const btnLogout = document.getElementById('btnLogout');
-    const totalOffSpan = document.getElementById('totalOffValue');
-    const totalShelvesSpan = document.getElementById('totalShelvesValue');
-    const totalFormatosSpan = document.getElementById('totalFormatosValue');
-    const dataAtualizacaoSpan = document.getElementById('dataAtualizacao');
-    const shelfStatsPanel = document.getElementById('shelfStatsPanel');
-
-    // Helpers
-    const norm = (v) => (v ?? '').toString().trim();
-    const lower = (v) => norm(v).toLowerCase();
-    const isEmpty = (v) => {
-      const s = lower(v);
-      return !s || s === '-' || s === 'null' || s === 'undefined' || s === 'sem identificação' || s === 'sem identificacao';
-    };
-    const escapeHtml = (str) => {
-      if (!str) return '';
-      return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
-    };
-
-    // Busca dados do Supabase
-    async function carregarCatalogo() {
-      let all = [];
-      let start = 0;
-      const limit = 1000;
-      while (true) {
-        const { data, error } = await supabase.from('catalogo').select('*').range(start, start + limit - 1);
-        if (error) throw new Error(error.message);
-        if (!data || data.length === 0) break;
-        all.push(...data);
-        if (data.length < limit) break;
-        start += limit;
-      }
-      return all;
-    }
-
-    function filtrarProdutosOff(catalogo) {
-      return catalogo.filter(item => {
-        const status = lower(item.stream_status);
-        const shelf = norm(item.prateleira);
-        return status === 'off' && !isEmpty(shelf);
-      });
-    }
-
-    function atualizarMetricasGerais(produtos) {
-      const total = produtos.length;
-      const prats = new Set(produtos.map(p => norm(p.prateleira)).filter(Boolean));
-      const formats = new Set(produtos.map(p => norm(p.formato)).filter(f => !isEmpty(f)));
-      totalOffSpan.innerText = total.toLocaleString('pt-BR');
-      totalShelvesSpan.innerText = prats.size.toLocaleString('pt-BR');
-      totalFormatosSpan.innerText = formats.size.toLocaleString('pt-BR');
-
-      const shelfOptions = ['<option value="">Todas as prateleiras</option>'];
-      [...prats].sort().forEach(s => shelfOptions.push(`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`));
-      shelfFilter.innerHTML = shelfOptions.join('');
-      const formatoOptions = ['<option value="">Todos os formatos</option>'];
-      [...formats].sort().forEach(f => formatoOptions.push(`<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`));
-      formatoFilter.innerHTML = formatoOptions.join('');
-      const gravadoras = new Set(produtos.map(p => norm(p.gravadora)).filter(g => !isEmpty(g)));
-      const gravadoraOptions = ['<option value="">Todas as gravadoras</option>'];
-      [...gravadoras].sort().forEach(g => gravadoraOptions.push(`<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`));
-      gravadoraFilter.innerHTML = gravadoraOptions.join('');
-    }
-
-    function atualizarMetricasFiltradas(produtos) {
-      const total = produtos.length;
-      const prats = new Set(produtos.map(p => norm(p.prateleira)).filter(p => !isEmpty(p)));
-      const formats = new Set(produtos.map(p => norm(p.formato)).filter(f => !isEmpty(f)));
-      totalOffSpan.innerText = total.toLocaleString('pt-BR');
-      totalShelvesSpan.innerText = prats.size.toLocaleString('pt-BR');
-      totalFormatosSpan.innerText = formats.size.toLocaleString('pt-BR');
-    }
-
-    function atualizarStatsPrateleira() {
-      const prateleiraSelecionada = norm(shelfFilter.value);
-      if (!prateleiraSelecionada) {
-        shelfStatsPanel.classList.add('hidden');
-        return;
-      }
-      const produtos = todosProdutosOff.filter(p => norm(p.prateleira) === prateleiraSelecionada);
-      const total = produtos.length;
-      const semNumero = produtos.filter(p => isEmpty(p.numero)).length;
-      const semArtista = produtos.filter(p => isEmpty(p.artista)).length;
-      const semTitulo = produtos.filter(p => isEmpty(p.titulo)).length;
-      const completos = produtos.filter(p => !isEmpty(p.numero) && !isEmpty(p.artista) && !isEmpty(p.titulo)).length;
-      document.getElementById('statTotal').innerText = total;
-      document.getElementById('statSemNumero').innerText = semNumero;
-      document.getElementById('statSemArtista').innerText = semArtista;
-      document.getElementById('statSemTitulo').innerText = semTitulo;
-      document.getElementById('statCompletos').innerText = completos;
-      document.getElementById('shelfNameBadge').innerHTML = `<i data-lucide="tag" class="inline w-3 h-3 mr-1"></i> ${escapeHtml(prateleiraSelecionada)}`;
-      shelfStatsPanel.classList.remove('hidden');
-      lucide.createIcons();
-    }
-
-    function getActiveFiltersSummary() {
-      const filtros = [];
-      const termo = searchInput.value.trim();
-      if (termo) filtros.push(`Busca: "${termo}"`);
-      const prateleira = shelfFilter.value;
-      if (prateleira) filtros.push(`Prateleira: ${prateleira}`);
-      const formato = formatoFilter.value;
-      if (formato) filtros.push(`Formato: ${formato}`);
-      const gravadora = gravadoraFilter.value;
-      if (gravadora) filtros.push(`Gravadora: ${gravadora}`);
-      const ident = identificacaoFilter.value;
-      if (ident === 'somente-identificados') filtros.push('Somente identificados (Título+Artista+Gravadora)');
-      if (ident === 'somente-nao-identificados') filtros.push('Somente não identificados');
-      return filtros.length ? filtros.join(' · ') : 'Nenhum filtro aplicado';
-    }
-
-    function atualizarResumoFiltrosImpressao() {
-      const summary = getActiveFiltersSummary();
-      const printSummarySpan = document.getElementById('printFilterSummary');
-      if (printSummarySpan) printSummarySpan.innerText = `Filtros ativos: ${summary}`;
-      const printDateSpan = document.getElementById('printDateSpan');
-      if (printDateSpan) printDateSpan.innerText = new Date().toLocaleString('pt-BR');
-    }
-
-    function aplicarFiltros() {
-      const termo = lower(searchInput.value);
-      const prateleira = norm(shelfFilter.value);
-      const formato = norm(formatoFilter.value);
-      const gravadora = norm(gravadoraFilter.value);
-      const identificacao = norm(identificacaoFilter.value);
-
-      let resultado = [...todosProdutosOff];
-      if (termo) {
-        resultado = resultado.filter(p => lower(p.titulo).includes(termo) || lower(p.artista).includes(termo) || lower(p.gravadora).includes(termo) || lower(p.numero).includes(termo));
-      }
-      if (prateleira) resultado = resultado.filter(p => norm(p.prateleira) === prateleira);
-      if (formato) resultado = resultado.filter(p => norm(p.formato) === formato);
-      if (gravadora) resultado = resultado.filter(p => norm(p.gravadora) === gravadora);
-      if (identificacao === 'somente-identificados') resultado = resultado.filter(p => !isEmpty(p.titulo) && !isEmpty(p.artista) && !isEmpty(p.gravadora));
-      if (identificacao === 'somente-nao-identificados') resultado = resultado.filter(p => isEmpty(p.titulo) || isEmpty(p.artista) || isEmpty(p.gravadora));
-
-      dadosFiltrados = resultado;
-      currentPage = 1;
-      atualizarMetricasFiltradas(dadosFiltrados);
-      renderizarTabela();
-      atualizarPaginacaoInfo();
-      atualizarStatsPrateleira();
-      atualizarResumoFiltrosImpressao();
-    }
-
-    function renderizarTabela() {
-      const start = (currentPage - 1) * rowsPerPage;
-      const end = start + rowsPerPage;
-      const pagina = dadosFiltrados.slice(start, end);
-      if (!pagina.length) {
-        tableBody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-gray-400 text-sm">Nenhum produto OFF encontrado.</td></tr>`;
-        lucide.createIcons();
-        return;
-      }
-      let html = '';
-      pagina.forEach((item, idx) => {
-        const rowNum = start + idx + 1;
-        html += `<tr>
-          <td class="text-gray-400 text-xs">${rowNum}</td>
-          <td class="font-medium text-sm">${escapeHtml(item.titulo || '—')}</td>
-          <td class="text-sm">${escapeHtml(item.artista || '—')}</td>
-          <td><span class="text-xs bg-[#c9a84c]/10 text-[#c9a84c] px-1.5 py-0.5 rounded">${escapeHtml(item.prateleira || '—')}</span></td>
-          <td class="text-sm">${escapeHtml(item.formato || '—')}</td>
-          <td class="text-xs text-gray-300">${escapeHtml(item.gravadora || '—')}</td>
-          <td class="text-xs text-gray-400">${escapeHtml(item.numero || '—')}</td>
-          <td><span class="badge-off">OFF</span></td>
-        </tr>`;
-      });
-      tableBody.innerHTML = html;
-      lucide.createIcons();
-    }
-
-    function atualizarPaginacaoInfo() {
-      const total = dadosFiltrados.length;
-      const start = total === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
-      const end = Math.min(currentPage * rowsPerPage, total);
-      document.getElementById('infoStart').innerText = start;
-      document.getElementById('infoEnd').innerText = end;
-      document.getElementById('totalFiltered').innerText = total.toLocaleString('pt-BR');
-      const totalPages = Math.ceil(total / rowsPerPage);
-      const pagContainer = document.getElementById('paginationControls');
-      if (!pagContainer) return;
-      if (totalPages <= 1) { pagContainer.innerHTML = ''; return; }
-      let pagHtml = `<button ${currentPage === 1 ? 'disabled' : ''} data-page="${currentPage - 1}">◀</button>`;
-      let startPage = Math.max(1, currentPage - 2);
-      let endPage = Math.min(totalPages, startPage + 4);
-      if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
-      for (let i = startPage; i <= endPage; i++) {
-        pagHtml += `<button data-page="${i}" class="${i === currentPage ? 'active' : ''}">${i}</button>`;
-      }
-      pagHtml += `<button ${currentPage === totalPages ? 'disabled' : ''} data-page="${currentPage + 1}">▶</button>`;
-      pagContainer.innerHTML = pagHtml;
-      pagContainer.querySelectorAll('button[data-page]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const page = parseInt(btn.dataset.page, 10);
-          if (!isNaN(page) && page >= 1 && page <= totalPages) {
-            currentPage = page;
-            renderizarTabela();
-            atualizarPaginacaoInfo();
-          }
-        });
-      });
-    }
-
-    async function exportarPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      doc.setFontSize(14);
-      doc.setTextColor(40, 40, 40);
-      doc.text('Somax Studios – Relatório de Catálogo OFF', 14, 15);
-      doc.setFontSize(9);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Gerado: ${new Date().toLocaleString('pt-BR')}`, 14, 22);
-      const filtrosResumo = getActiveFiltersSummary();
-      doc.text(`Filtros: ${filtrosResumo}`, 14, 29);
-      doc.text(`Total de itens: ${dadosFiltrados.length}`, 14, 36);
-      const headers = [['#', 'Título', 'Artista', 'Prateleira', 'Formato', 'Gravadora', 'Número']];
-      const body = dadosFiltrados.map((item, idx) => [
-        idx+1, item.titulo || '—', item.artista || '—', item.prateleira || '—',
-        item.formato || '—', item.gravadora || '—', item.numero || '—'
-      ]);
-      doc.autoTable({
-        head: headers,
-        body: body,
-        startY: 42,
-        theme: 'striped',
-        headStyles: { fillColor: [201, 168, 76], textColor: [0, 0, 0], fontStyle: 'bold' },
-        styles: { fontSize: 7, cellPadding: 2, textColor: [30, 30, 30] },
-        columnStyles: { 0: { cellWidth: 8 }, 1: { cellWidth: 42 }, 2: { cellWidth: 38 }, 3: { cellWidth: 28 }, 4: { cellWidth: 20 }, 5: { cellWidth: 30 }, 6: { cellWidth: 20 } }
-      });
-      doc.save(`somax_off_${new Date().toISOString().slice(0,19)}.pdf`);
-    }
-
-    function exportarCSV() {
-      if (!dadosFiltrados.length) { alert('Nenhum produto OFF para exportar.'); return; }
-      const headers = ['Prateleira', 'Título', 'Artista', 'Formato', 'Gravadora', 'Número', 'Status'];
-      const rows = dadosFiltrados.map(p => [norm(p.prateleira), p.titulo || '', p.artista || '', p.formato || '', p.gravadora || '', p.numero || '', 'OFF']);
-      const csv = [headers, ...rows].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
-      const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `somax_off_${new Date().toISOString().slice(0,19)}.csv`;
-      link.click();
-      URL.revokeObjectURL(link.href);
-    }
-
-    function limparFiltros() {
-      searchInput.value = '';
-      shelfFilter.value = '';
-      formatoFilter.value = '';
-      gravadoraFilter.value = '';
-      identificacaoFilter.value = '';
-      aplicarFiltros();
-    }
-
-    function imprimirRelatorioCompleto() {
-      const filtrosTexto = getActiveFiltersSummary();
-      const dataHora = new Date().toLocaleString('pt-BR');
-      const totalItens = dadosFiltrados.length;
-      let linhasTabela = '';
-      dadosFiltrados.forEach((item, idx) => {
-        linhasTabela += `<tr>
-          <td style="border:1px solid #ccc; padding:6px;">${idx+1}</td>
-          <td style="border:1px solid #ccc; padding:6px;">${escapeHtml(item.titulo || '—')}</td>
-          <td style="border:1px solid #ccc; padding:6px;">${escapeHtml(item.artista || '—')}</td>
-          <td style="border:1px solid #ccc; padding:6px;">${escapeHtml(item.prateleira || '—')}</td>
-          <td style="border:1px solid #ccc; padding:6px;">${escapeHtml(item.formato || '—')}</td>
-          <td style="border:1px solid #ccc; padding:6px;">${escapeHtml(item.gravadora || '—')}</td>
-          <td style="border:1px solid #ccc; padding:6px;">${escapeHtml(item.numero || '—')}</td>
-        </tr>`;
-      });
-      const printWindow = window.open('', '_blank');
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html><head><title>Somax Studios - Relatório OFF</title>
-        <style>
-          * { margin:0; padding:0; box-sizing:border-box; }
-          body { font-family: 'Inter', sans-serif; margin: 1.5cm; background: white; color: black; }
-          h1 { font-size: 20pt; margin-bottom: 8px; }
-          .info { margin-bottom: 20px; font-size: 10pt; border-bottom: 1px solid #aaa; padding-bottom: 8px; }
-          table { width: 100%; border-collapse: collapse; font-size: 9pt; margin-top: 12px; }
-          th { background: #f0f0f0; border: 1px solid #aaa; padding: 8px; text-align: left; }
-          td { border: 1px solid #ddd; padding: 6px; }
-          .footer { margin-top: 20px; font-size: 8pt; text-align: center; color: #555; }
-        </style>
-        </head><body>
-        <h1>Somax Studios · Catálogo OFF Stream</h1>
-        <div class="info"><strong>Filtros aplicados:</strong> ${filtrosTexto}<br>
-        <strong>Total de itens:</strong> ${totalItens} &nbsp;|&nbsp; <strong>Gerado em:</strong> ${dataHora}</div>
-        <table>
-          <thead><tr><th>#</th><th>Título</th><th>Artista</th><th>Prateleira</th><th>Formato</th><th>Gravadora</th><th>Número</th></tr></thead>
-          <tbody>${linhasTabela || '<tr><td colspan="7">Nenhum registro encontrado</td></tr>'}</tbody>
-        </table>
-        <div class="footer">Somax Studios - Relatório oficial de produtos pendentes (OFF)</div>
-        </body></html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
-    }
-
-    async function carregarDadosApp() {
-      if (!appLoadingOverlay) return;
-      appLoadingOverlay.classList.remove('hidden');
-      try {
-        const catalogo = await carregarCatalogo();
-        todosProdutosOff = filtrarProdutosOff(catalogo);
-        atualizarMetricasGerais(todosProdutosOff);
-        dadosFiltrados = [...todosProdutosOff];
-        renderizarTabela();
-        atualizarPaginacaoInfo();
-        dataAtualizacaoSpan.innerText = `Atualizado: ${new Date().toLocaleString('pt-BR')}`;
-        aplicarFiltros();
-      } catch (err) {
-        console.error(err);
-        tableBody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-red-400 text-sm">Erro ao carregar: ${err.message}</td></tr>`;
-      } finally {
-        appLoadingOverlay.classList.add('hidden');
-      }
-    }
-
-    async function logout() {
-      await supabase.auth.signOut();
-      todosProdutosOff = [];
-      dadosFiltrados = [];
-      tableBody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-gray-400">Faça login para visualizar</td></tr>`;
-      appContainer.style.display = 'none';
-      loginContainer.style.display = 'flex';
-    }
-
-    async function handleLogin(email, password) {
-      const errorDiv = document.getElementById('loginErrorMsg');
-      errorDiv.classList.add('hidden');
-
-      try {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-
-        loginContainer.style.display = 'none';
-        appContainer.style.display = 'block';
-
-        await carregarDadosApp();
-        lucide.createIcons();
-
-      } catch (err) {
-        errorDiv.innerText = `Erro: ${err.message || 'Credenciais inválidas'}`;
-        errorDiv.classList.remove('hidden');
-      }
-    }
-
-    async function verificarSessao() {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (session) {
-        loginContainer.style.display = 'none';
-        appContainer.style.display = 'block';
-
-        await carregarDadosApp();
-        lucide.createIcons();
-      } else {
-        loginContainer.style.display = 'flex';
-        appContainer.style.display = 'none';
-      }
-    }
-
-    function configurarEventosApp() {
-      searchInput.addEventListener('input', aplicarFiltros);
-      shelfFilter.addEventListener('change', aplicarFiltros);
-      formatoFilter.addEventListener('change', aplicarFiltros);
-      gravadoraFilter.addEventListener('change', aplicarFiltros);
-      identificacaoFilter.addEventListener('change', aplicarFiltros);
-
-      clearFiltersBtn.addEventListener('click', limparFiltros);
-      btnRefresh.addEventListener('click', () => carregarDadosApp());
-      btnExportCSV.addEventListener('click', exportarCSV);
-      btnExportPDF.addEventListener('click', exportarPDF);
-      btnPrintReport.addEventListener('click', imprimirRelatorioCompleto);
-      btnLogout.addEventListener('click', logout);
-    }
-
-    document.getElementById('btnLogin').addEventListener('click', () => {
-      const email = document.getElementById('loginEmail').value.trim();
-      const password = document.getElementById('loginPassword').value;
-
-      if (!email || !password) {
-        const errorDiv = document.getElementById('loginErrorMsg');
-        errorDiv.innerText = 'Preencha e-mail e senha.';
-        errorDiv.classList.remove('hidden');
-        return;
-      }
-
-      handleLogin(email, password);
-    });
-
-    const pwdField = document.getElementById('loginPassword');
-    const emailField = document.getElementById('loginEmail');
-
-    const loginHandler = () => {
-      const email = emailField.value.trim();
-      const password = pwdField.value;
-
-      if (email && password) {
-        handleLogin(email, password);
-      }
-    };
-
-    pwdField.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') loginHandler();
-    });
-
-    emailField.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') loginHandler();
-    });
-
-    configurarEventosApp();
-    verificarSessao();
+    import { init } from './js/catalogo.js';
+    // O init já verifica a sessão e redireciona se necessário
+    init();
   </script>
 </body>
 </html>

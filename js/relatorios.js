@@ -4,6 +4,18 @@ import { supabase } from './supabase-client.js';
 
 let catalogo = [];
 
+// Estado dos filtros da seção "Catalogados x Não Catalogados"
+const confState = {
+  situacao: '',
+  prateleira: '',
+  formato: '',
+  gravadora: '',
+  status: '',
+  busca: '',
+  pagina: 1
+};
+const CONF_ROWS_PER_PAGE = 25;
+
 function $(id) {
   return document.getElementById(id);
 }
